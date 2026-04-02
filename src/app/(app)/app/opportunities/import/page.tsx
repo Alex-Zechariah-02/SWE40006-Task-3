@@ -1,11 +1,19 @@
+import { PageHeader } from "@/components/shared/PageHeader";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { Download } from "lucide-react";
+
 export default function Page() {
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-10">
-      <h1 className="text-2xl font-semibold leading-tight">Import</h1>
-      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-        Import placeholder.
-      </p>
-    </main>
+    <div className="mx-auto w-full max-w-4xl px-6 py-10">
+      <PageHeader
+        title="Import"
+        description="Import an opportunity from search results."
+      />
+      <EmptyState
+        icon={Download}
+        title="Nothing to import"
+        description="Use the search page to find and import opportunities."
+      />
+    </div>
   );
 }
-

@@ -1,11 +1,19 @@
+import { PageHeader } from "@/components/shared/PageHeader";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { Lightbulb } from "lucide-react";
+
 export default function Page() {
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-10">
-      <h1 className="text-2xl font-semibold leading-tight">Opportunities</h1>
-      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-        Opportunities list placeholder.
-      </p>
-    </main>
+    <div className="mx-auto w-full max-w-6xl px-6 py-10">
+      <PageHeader
+        title="Opportunities"
+        description="Saved opportunities from search."
+      />
+      <EmptyState
+        icon={Lightbulb}
+        title="No opportunities saved"
+        description="Search for opportunities and save them here to track your pipeline."
+      />
+    </div>
   );
 }
-

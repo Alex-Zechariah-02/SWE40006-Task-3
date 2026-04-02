@@ -1,11 +1,19 @@
+import { PageHeader } from "@/components/shared/PageHeader";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { Users } from "lucide-react";
+
 export default function Page() {
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-10">
-      <h1 className="text-2xl font-semibold leading-tight">Contacts</h1>
-      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-        Contacts list placeholder.
-      </p>
-    </main>
+    <div className="mx-auto w-full max-w-6xl px-6 py-10">
+      <PageHeader
+        title="Contacts"
+        description="People you have connected with."
+      />
+      <EmptyState
+        icon={Users}
+        title="No contacts yet"
+        description="Contacts will appear here as you add them to companies or applications."
+      />
+    </div>
   );
 }
-

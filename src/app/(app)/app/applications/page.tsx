@@ -1,11 +1,19 @@
+import { PageHeader } from "@/components/shared/PageHeader";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { FileText } from "lucide-react";
+
 export default function Page() {
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-10">
-      <h1 className="text-2xl font-semibold leading-tight">Applications</h1>
-      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-        Applications list placeholder.
-      </p>
-    </main>
+    <div className="mx-auto w-full max-w-6xl px-6 py-10">
+      <PageHeader
+        title="Applications"
+        description="Track your active and past applications."
+      />
+      <EmptyState
+        icon={FileText}
+        title="No applications yet"
+        description="Applications will appear here once you start tracking them."
+      />
+    </div>
   );
 }
-
