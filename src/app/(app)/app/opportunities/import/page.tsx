@@ -1,6 +1,5 @@
 import { PageHeader } from "@/components/shared/PageHeader";
-import { EmptyState } from "@/components/shared/EmptyState";
-import { Download } from "lucide-react";
+import { PendingImportRunner } from "@/features/search/PendingImportRunner";
 
 export default function Page() {
   return (
@@ -9,11 +8,7 @@ export default function Page() {
         title="Import"
         description="Import an opportunity from search results."
       />
-      <EmptyState
-        icon={Download}
-        title="Nothing to import"
-        description="Use the search page to find and import opportunities."
-      />
+      <PendingImportRunner />
     </div>
   );
 }

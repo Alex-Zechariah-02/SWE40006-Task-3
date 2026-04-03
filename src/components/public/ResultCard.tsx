@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Bookmark } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { NormalizedResult } from "@/types/search";
@@ -8,9 +7,10 @@ import type { NormalizedResult } from "@/types/search";
 interface ResultCardProps {
   result: NormalizedResult;
   onViewDetails: (result: NormalizedResult) => void;
+  onSave: (result: NormalizedResult) => void;
 }
 
-export function ResultCard({ result, onViewDetails }: ResultCardProps) {
+export function ResultCard({ result, onViewDetails, onSave }: ResultCardProps) {
   const metaParts = [
     result.companyName,
     result.location,
@@ -48,13 +48,14 @@ export function ResultCard({ result, onViewDetails }: ResultCardProps) {
         >
           View details
         </Button>
-        <Link
-          href="/login"
+        <button
+          type="button"
           className={buttonVariants({ variant: "outline", size: "sm" })}
+          onClick={() => onSave(result)}
         >
           <Bookmark className="h-3.5 w-3.5" aria-hidden />
           Save
-        </Link>
+        </button>
       </div>
     </article>
   );

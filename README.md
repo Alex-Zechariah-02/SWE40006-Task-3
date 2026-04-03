@@ -13,10 +13,10 @@ pnpm dev
 
 ## Environment variables
 
-Local development uses a Postgres `DATABASE_URL`.
+Local development uses a Postgres `DATABASE_URL` and a Linkup `LINKUP_API_KEY`.
 
 1. Copy `.env.local.example` to `.env.local`.
-2. Replace the placeholder credentials with your local Postgres values.
+2. Replace the placeholder credentials with your local Postgres values and a valid Linkup API key.
 
 Example:
 
@@ -30,6 +30,14 @@ Example:
 
 ```text
 AUTH_SECRET="replace_me_with_a_long_random_value"
+```
+
+Public search requires `LINKUP_API_KEY` (server-side only).
+
+Example:
+
+```text
+LINKUP_API_KEY="replace_me_with_your_linkup_api_key"
 ```
 
 ## Tooling

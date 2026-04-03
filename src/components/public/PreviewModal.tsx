@@ -1,7 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import {
   Dialog,
@@ -17,27 +15,24 @@ interface PreviewModalProps {
   result: NormalizedResult | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSave: (result: NormalizedResult) => void;
 }
 
-export function PreviewModal({ result, open, onOpenChange }: PreviewModalProps) {
-  // Cache the last non-null result so the Dialog exit animation completes with content
-  // visible. Without this, clearing `result` in the parent at the same time as
-  // `open → false` would fire `return null` before base-ui can play the transition.
-  const [displayResult, setDisplayResult] = useState<NormalizedResult | null>(null);
-
-  useEffect(() => {
-    if (result !== null) setDisplayResult(result);
-  }, [result]);
-
-  const metaRows = displayResult
+export function PreviewModal({
+  result,
+  open,
+  onOpenChange,
+  onSave,
+}: PreviewModalProps) {
+  const metaRows = result
     ? [
-        { label: "COMPANY", value: displayResult.companyName },
-        { label: "LOCATION", value: displayResult.location },
-        ...(displayResult.remoteMode
-          ? [{ label: "REMOTE", value: displayResult.remoteMode.toUpperCase() }]
+        { label: "COMPANY", value: result.companyName },
+        { label: "LOCATION", value: result.location },
+        ...(result.remoteMode
+          ? [{ label: "REMOTE", value: result.remoteMode.toUpperCase() }]
           : []),
-        ...(displayResult.opportunityType
-          ? [{ label: "TYPE", value: displayResult.opportunityType.toUpperCase() }]
+        ...(result.opportunityType
+          ? [{ label: "TYPE", value: result.opportunityType.toUpperCase() }]
           : []),
       ]
     : [];
@@ -45,48 +40,51 @@ export function PreviewModal({ result, open, onOpenChange }: PreviewModalProps) 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl">
-        {displayResult && (
+        {result && (
           <>
             <DialogHeader>
               <div className="type-mono-label text-muted-foreground mb-1">
-                SOURCE // {displayResult.sourceProvider.toUpperCase()}
+                SOURCE // {result.sourceProvider.toUpperCase()}
               </div>
               <DialogTitle className="type-h2 font-display leading-snug text-balance">
-                {displayResult.title}
+                {result.title}
               </DialogTitle>
             </DialogHeader>
 
             <div className="space-y-1.5">
               {metaRows.map(({ label, value }) => (
                 <div key={label} className="type-mono-label text-muted-foreground">
-                  {label} // {value}
+                  {label}
+                  {" // "}
+                  {value}
                 </div>
               ))}
             </div>
 
             <div className="border-t border-border pt-3">
               <p className="type-body text-foreground/90 text-pretty max-h-40 overflow-y-auto leading-relaxed">
-                {displayResult.snippet}
+                {result.snippet}
               </p>
             </div>
 
             <a
-              href={displayResult.sourceUrl}
+              href={result.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 type-small text-muted-foreground transition-colors hover:text-foreground"
             >
               <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
-              <span className="truncate">{displayResult.sourceUrl}</span>
+              <span className="truncate">{result.sourceUrl}</span>
             </a>
 
             <DialogFooter showCloseButton>
-              <Link
-                href="/login"
+              <button
+                type="button"
                 className={buttonVariants({ variant: "default" })}
+                onClick={() => onSave(result)}
               >
                 Save opportunity
-              </Link>
+              </button>
             </DialogFooter>
           </>
         )}
