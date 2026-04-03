@@ -11,6 +11,19 @@ pnpm install
 pnpm dev
 ```
 
+## Environment variables
+
+Local development uses a Postgres `DATABASE_URL`.
+
+1. Copy `.env.local.example` to `.env.local`.
+2. Replace the placeholder credentials with your local Postgres values.
+
+Example:
+
+```text
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/careerdeck_dev?schema=public"
+```
+
 ## Tooling
 
 - Node.js: `22.22.0` (pinned via `.nvmrc`)

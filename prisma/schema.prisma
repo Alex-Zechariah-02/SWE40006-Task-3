@@ -1,0 +1,243 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum OpportunityStage {
+  Saved
+  Shortlisted
+}
+
+enum ApplicationStage {
+  Applied
+  Assessment
+  Interview
+  Offer
+  Rejected
+  Withdrawn
+}
+
+enum InterviewType {
+  RecruiterScreen
+  HRScreen
+  AssessmentReview
+  TechnicalInterview
+  FinalInterview
+  OfferDiscussion
+}
+
+enum ActionItemStatus {
+  Open
+  InProgress
+  Completed
+  Cancelled
+}
+
+enum ActionItemPriority {
+  Low
+  Medium
+  High
+}
+
+enum RemoteMode {
+  OnSite
+  Hybrid
+  Remote
+}
+
+enum OpportunityType {
+  Internship
+  GraduateProgram
+  FullTime
+  PartTime
+  Contract
+}
+
+model User {
+  id           String       @id @default(cuid())
+  name         String
+  email        String       @unique
+  passwordHash String
+
+  companies    Company[]
+  opportunities Opportunity[]
+  applications Application[]
+  actionItems  ActionItem[]
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model Company {
+  id                     String        @id @default(cuid())
+  userId                 String
+  user                   User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  name                   String
+  normalizedName         String
+  website                String?
+  location               String?
+  industry               String?
+  techStackNotes         String?       @db.Text
+  applicationProcessNotes String?      @db.Text
+  interviewNotes         String?       @db.Text
+  compensationNotes      String?       @db.Text
+  generalNotes           String?       @db.Text
+  archivedAt             DateTime?
+
+  contacts               Contact[]
+  opportunities          Opportunity[]
+  applications           Application[]
+  actionItems            ActionItem[]
+
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  @@unique([userId, normalizedName])
+}
+
+model Contact {
+  id         String        @id @default(cuid())
+  companyId  String
+  company    Company       @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  name       String
+  title      String?
+  email      String?
+  phone      String?
+  linkedinUrl String?
+  notes      String?       @db.Text
+
+  applications Application[]
+
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@unique([companyId, email])
+}
+
+model Opportunity {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  companyId       String
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  title           String
+  opportunityType OpportunityType
+  location        String?
+  remoteMode      RemoteMode
+  sourceType      String
+  sourceUrl       String?
+  sourceProvider  String
+  externalSourceId String?
+  snippet         String?
+  description     String?          @db.Text
+  stage           OpportunityStage
+  deadline        DateTime?        @db.Date
+  tags            String[]
+  notes           String?          @db.Text
+  dedupeKey       String
+  rawProviderPayload Json?
+  importedAt      DateTime?
+  archivedAt      DateTime?
+
+  application     Application?
+  actionItems     ActionItem[]
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([userId, dedupeKey])
+}
+
+model Application {
+  id            String           @id @default(cuid())
+  userId        String
+  user          User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  opportunityId String           @unique
+  opportunity   Opportunity      @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  companyId     String
+  company       Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  currentStage  ApplicationStage
+  appliedDate   DateTime?        @db.Date
+  statusNotes   String?          @db.Text
+  priority      ActionItemPriority
+  tags          String[]
+  archivedAt    DateTime?
+
+  interviews    Interview[]
+  offerDetail   OfferDetail?
+  rejectionDetail RejectionDetail?
+  contacts      Contact[]
+  actionItems   ActionItem[]
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model Interview {
+  id            String        @id @default(cuid())
+  applicationId String
+  application   Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  interviewType InterviewType
+  scheduledAt   DateTime
+  locationOrLink String?
+  status        String
+  notes         String?       @db.Text
+
+  actionItems   ActionItem[]
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model ActionItem {
+  id            String           @id @default(cuid())
+  userId        String
+  user          User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  companyId     String?
+  company       Company?         @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  opportunityId String?
+  opportunity   Opportunity?     @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  applicationId String?
+  application   Application?     @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  interviewId   String?
+  interview     Interview?       @relation(fields: [interviewId], references: [id], onDelete: SetNull)
+
+  title         String
+  description   String?          @db.Text
+  dueAt         DateTime?
+  priority      ActionItemPriority
+  status        ActionItemStatus
+  suggestedBySystem Boolean      @default(false)
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model OfferDetail {
+  id            String        @id @default(cuid())
+  applicationId String        @unique
+  application   Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  offeredDate   DateTime?     @db.Date
+  compensationNote String?    @db.Text
+  responseDeadline DateTime?  @db.Date
+  decisionStatus String
+  notes         String?       @db.Text
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model RejectionDetail {
+  id            String        @id @default(cuid())
+  applicationId String        @unique
+  application   Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  rejectionDate DateTime?     @db.Date
+  rejectedAtStage String
+  notes         String?       @db.Text
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
