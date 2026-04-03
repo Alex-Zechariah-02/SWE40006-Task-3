@@ -24,6 +24,14 @@ Example:
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/careerdeck_dev?schema=public"
 ```
 
+Authentication also requires `AUTH_SECRET`.
+
+Example:
+
+```text
+AUTH_SECRET="replace_me_with_a_long_random_value"
+```
+
 ## Tooling
 
 - Node.js: `22.22.0` (pinned via `.nvmrc`)

@@ -4,10 +4,21 @@ import { cn } from "@/lib/utils";
 
 interface TopNavProps {
   variant?: "public" | "app";
+  userLabel?: string;
   className?: string;
 }
 
-export function TopNav({ variant = "public", className }: TopNavProps) {
+export function TopNav({
+  variant = "public",
+  userLabel,
+  className,
+}: TopNavProps) {
+  async function signOutAction() {
+    "use server";
+    const { signOut } = await import("../../../auth");
+    await signOut({ redirectTo: "/login" });
+  }
+
   return (
     <header
       className={cn(
@@ -76,6 +87,21 @@ export function TopNav({ variant = "public", className }: TopNavProps) {
               >
                 Actions
               </Link>
+
+              {userLabel && (
+                <div className="ml-2 hidden max-w-[14rem] items-center rounded-md border border-border bg-background px-2 py-1 text-xs text-muted-foreground sm:flex">
+                  <span className="truncate">{userLabel}</span>
+                </div>
+              )}
+
+              <form action={signOutAction}>
+                <button
+                  type="submit"
+                  className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                >
+                  Sign out
+                </button>
+              </form>
             </>
           )}
 
