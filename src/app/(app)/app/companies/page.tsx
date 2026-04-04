@@ -1,19 +1,37 @@
 import { PageHeader } from "@/components/shared/PageHeader";
-import { EmptyState } from "@/components/shared/EmptyState";
-import { Building2 } from "lucide-react";
+import { getSessionOrRedirect } from "@/lib/auth/session";
+import { listCompanies } from "@/lib/db/companies";
+import { CompanyListSurface } from "@/features/companies/CompanyListSurface";
+import { CompanyCreateModal } from "@/features/companies/CompanyCreateModal";
+import { prisma } from "@/lib/prisma";
 
-export default function Page() {
+export default async function Page() {
+  const session = await getSessionOrRedirect("/app/companies");
+  const user = await prisma.user.findUnique({
+    where: { email: session.user?.email ?? "" },
+    select: { id: true },
+  });
+
+  if (!user) return null;
+
+  const companies = await listCompanies(user.id);
+
+  const serialized = companies.map((c) => ({
+    id: c.id,
+    name: c.name,
+    location: c.location,
+    industry: c.industry,
+    _count: c._count,
+  }));
+
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-10">
       <PageHeader
         title="Companies"
-        description="Companies you have interacted with."
+        description="Companies you are tracking."
+        action={<CompanyCreateModal />}
       />
-      <EmptyState
-        icon={Building2}
-        title="No companies yet"
-        description="Companies will appear here as you track opportunities and applications."
-      />
+      <CompanyListSurface companies={serialized} />
     </div>
   );
 }

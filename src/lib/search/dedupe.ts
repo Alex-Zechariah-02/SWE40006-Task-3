@@ -29,3 +29,30 @@ export function computeDedupeKey(params: {
   return `${params.provider.toLowerCase()}:${params.canonicalUrl}`;
 }
 
+/**
+ * Dedupe key for manual opportunities that have no source URL.
+ * Uses a hash of normalized title + company + location + type.
+ */
+export function computeManualDedupeKey(params: {
+  title: string;
+  companyName: string;
+  location: string;
+  opportunityType: string;
+}): string {
+  const normalized = [
+    params.title.trim().toLowerCase(),
+    params.companyName.trim().toLowerCase(),
+    (params.location || "").trim().toLowerCase(),
+    params.opportunityType.trim().toLowerCase(),
+  ].join("|");
+
+  // Simple hash for deduplication (not cryptographic)
+  let hash = 0;
+  for (let i = 0; i < normalized.length; i++) {
+    const ch = normalized.charCodeAt(i);
+    hash = ((hash << 5) - hash + ch) | 0;
+  }
+  const hex = (hash >>> 0).toString(16).padStart(8, "0");
+  return `manual:${hex}`;
+}
+

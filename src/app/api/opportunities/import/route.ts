@@ -5,6 +5,7 @@ import { auth } from "../../../../../auth";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { canonicalizeUrl, computeDedupeKey } from "@/lib/search/dedupe";
+import { normalizeCompanyName } from "@/lib/db/normalize";
 
 export const runtime = "nodejs";
 
@@ -21,18 +22,6 @@ const payloadSchema = z.object({
   confidence: z.number().optional(),
   rawProviderPayload: z.unknown().optional(),
 });
-
-function normalizeCompanyName(value: string): { name: string; normalizedName: string } {
-  const name = value.trim();
-  const normalizedName = name
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim()
-    .replace(/\s+/g, " ");
-
-  return { name, normalizedName };
-}
 
 function mapRemoteMode(value: string | undefined) {
   const v = (value ?? "").trim().toLowerCase();
