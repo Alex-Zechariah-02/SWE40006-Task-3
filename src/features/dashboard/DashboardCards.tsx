@@ -38,7 +38,7 @@ export function DashboardCards({
         label="Follow-ups Due"
         value={followUpsDue}
         icon={AlertCircle}
-        href="/app/actions?status=openWork&dueWindow=dueSoon&sort=dueDate"
+        href="/app/actions?status=openWork&dueWindow=overdue&sort=dueDate"
         interactive
       />
       <StatCard

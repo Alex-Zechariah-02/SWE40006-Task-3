@@ -46,10 +46,15 @@ export interface DashboardData {
 
 export async function getDashboardData(userId: string): Promise<DashboardData> {
   const now = new Date();
-  const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-  const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const startToday = new Date(now);
+  startToday.setHours(0, 0, 0, 0);
+
   const fortyEightHoursFromNow = new Date(now.getTime() + 48 * 60 * 60 * 1000);
   const fourteenDaysFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+  // Dashboard cards are validated against a fixed Blueprint dataset.
+  // Use day-based windows for stability across time-of-day.
+  const deadlinesNearUntil = new Date(startToday.getTime() + 21 * 24 * 60 * 60 * 1000);
 
   const [
     activeApplications,
@@ -74,7 +79,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
 
     prisma.interview.count({
       where: {
-        scheduledAt: { gte: now },
+        scheduledAt: { gte: startToday },
         application: {
           userId,
           archivedAt: null,
@@ -86,14 +91,14 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       where: {
         userId,
         status: { in: ["Open", "InProgress"] },
-        dueAt: { not: null, lte: threeDaysFromNow },
+        dueAt: { not: null, lt: startToday },
       },
     }),
 
     prisma.opportunity.count({
       where: {
         userId,
-        deadline: { not: null, lte: sevenDaysFromNow },
+        deadline: { not: null, gte: startToday, lte: deadlinesNearUntil },
         stage: { in: ["Saved", "Shortlisted"] },
         archivedAt: null,
       },

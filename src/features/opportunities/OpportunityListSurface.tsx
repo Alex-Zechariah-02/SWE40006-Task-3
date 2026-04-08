@@ -99,13 +99,15 @@ export function OpportunityListSurface({
 
     if (deadlineWindow === "near") {
       const now = new Date();
-      const sevenDaysFromNow = new Date(
-        now.getTime() + 7 * 24 * 60 * 60 * 1000
+      const startToday = new Date(now);
+      startToday.setHours(0, 0, 0, 0);
+      const twentyOneDaysFromToday = new Date(
+        startToday.getTime() + 21 * 24 * 60 * 60 * 1000
       );
       result = result.filter((o) => {
         if (!o.deadline) return false;
         const deadline = new Date(o.deadline);
-        return deadline > now && deadline <= sevenDaysFromNow;
+        return deadline >= startToday && deadline <= twentyOneDaysFromToday;
       });
     }
 
