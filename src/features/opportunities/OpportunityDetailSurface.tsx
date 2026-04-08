@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArchiveButton } from "@/components/app/ArchiveButton";
 import { OpportunityEditModal } from "./OpportunityEditModal";
-import { Pencil, ExternalLink } from "lucide-react";
+import { ApplicationConvertModal } from "@/features/applications/ApplicationConvertModal";
+import { Pencil, ExternalLink, FileText, CheckCircle2 } from "lucide-react";
 
 interface OpportunityDetailData {
   id: string;
@@ -52,6 +53,7 @@ export function OpportunityDetailSurface({
 }) {
   const router = useRouter();
   const [editOpen, setEditOpen] = React.useState(false);
+  const [convertOpen, setConvertOpen] = React.useState(false);
 
   async function handleArchive() {
     const action = opportunity.archivedAt ? "unarchive" : "archive";
@@ -84,6 +86,32 @@ export function OpportunityDetailSurface({
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {!opportunity.application ? (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setConvertOpen(true)}
+            >
+              <FileText className="mr-1.5 size-4" />
+              Convert to Application
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 type-small text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="size-4" />
+                Already converted
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  router.push(`/app/applications/${opportunity.application!.id}`)
+                }
+              >
+                View application
+              </Button>
+            </div>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -220,6 +248,17 @@ export function OpportunityDetailSurface({
         open={editOpen}
         onOpenChange={setEditOpen}
       />
+
+      {/* Convert to Application modal */}
+      {!opportunity.application && (
+        <ApplicationConvertModal
+          opportunityId={opportunity.id}
+          opportunityTitle={opportunity.title}
+          companyName={opportunity.company.name}
+          open={convertOpen}
+          onOpenChange={setConvertOpen}
+        />
+      )}
     </>
   );
 }

@@ -3,7 +3,6 @@
 import * as React from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -13,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { LabelValue } from "@/components/shared/LabelValue";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { Lightbulb, ExternalLink, Calendar } from "lucide-react";
+import { Lightbulb, Calendar } from "lucide-react";
 
 interface OpportunityRow {
   id: string;
