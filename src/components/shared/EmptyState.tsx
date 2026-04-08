@@ -6,6 +6,7 @@ interface EmptyStateProps {
   title: string;
   description?: string;
   action?: React.ReactNode;
+  headingAs?: "h2" | "h3";
   className?: string;
 }
 
@@ -14,8 +15,10 @@ export function EmptyState({
   title,
   description,
   action,
+  headingAs = "h2",
   className,
 }: EmptyStateProps) {
+  const Heading = headingAs;
   return (
     <div
       className={cn(
@@ -24,9 +27,9 @@ export function EmptyState({
       )}
     >
       {Icon && (
-        <Icon className="mb-3 h-10 w-10 text-muted-foreground/50" />
+        <Icon className="mb-3 h-10 w-10 text-muted-foreground/50" aria-hidden />
       )}
-      <h3 className="type-h3 font-medium">{title}</h3>
+      <Heading className="type-h3 font-medium">{title}</Heading>
       {description && (
         <p className="mt-1 max-w-sm type-body text-muted-foreground">
           {description}

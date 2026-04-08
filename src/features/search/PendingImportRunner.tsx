@@ -16,6 +16,11 @@ export function PendingImportRunner() {
   const [status, setStatus] = useState<Status>("checking");
   const [message, setMessage] = useState<string | null>(null);
 
+  const wrapperProps = {
+    "data-testid": "pending-import",
+    "data-state": status,
+  } as const;
+
   useEffect(() => {
     async function run() {
       const envelope = readPendingImport();
@@ -80,23 +85,25 @@ export function PendingImportRunner() {
 
   if (status === "missing") {
     return (
-      <EmptyState
-        icon={Download}
-        title="Nothing to import"
-        description="Return to search and save an opportunity to import it here."
-        action={
-          <Link href="/search" className={buttonVariants({ variant: "outline" })}>
-            <Search className="h-4 w-4" aria-hidden />
-            Back to search
-          </Link>
-        }
-      />
+      <div {...wrapperProps}>
+        <EmptyState
+          icon={Download}
+          title="Nothing to import"
+          description="Return to search and save an opportunity to import it here."
+          action={
+            <Link href="/search" className={buttonVariants({ variant: "outline" })}>
+              <Search className="h-4 w-4" aria-hidden />
+              Back to search
+            </Link>
+          }
+        />
+      </div>
     );
   }
 
   if (status === "failed") {
     return (
-      <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+      <div {...wrapperProps} className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
         <div className="flex items-start gap-2">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <div className="min-w-0">
@@ -125,7 +132,7 @@ export function PendingImportRunner() {
 
   if (status === "success") {
     return (
-      <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">
+      <div {...wrapperProps} className="rounded-md border border-border bg-card px-4 py-3 text-sm" role="status">
         <div className="flex items-start gap-2">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--status-success)]" aria-hidden />
           <div>
@@ -141,7 +148,7 @@ export function PendingImportRunner() {
 
   // checking / importing
   return (
-    <div className="rounded-md border border-border bg-card px-4 py-3 text-sm">
+    <div {...wrapperProps} className="rounded-md border border-border bg-card px-4 py-3 text-sm" role="status">
       <div className="flex items-start gap-2">
         <Download className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
         <div>

@@ -39,7 +39,7 @@ export function PreviewModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-xl" data-testid="preview-modal">
         {result && (
           <>
             <DialogHeader>
@@ -53,7 +53,10 @@ export function PreviewModal({
 
             <div className="space-y-1.5">
               {metaRows.map(({ label, value }) => (
-                <div key={label} className="type-mono-label text-muted-foreground">
+                <div
+                  key={label}
+                  className="type-mono-label text-muted-foreground break-words"
+                >
                   {label}
                   {" // "}
                   {value}
@@ -67,15 +70,17 @@ export function PreviewModal({
               </p>
             </div>
 
-            <a
-              href={result.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 type-small text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
-              <span className="truncate">{result.sourceUrl}</span>
-            </a>
+            <div className="w-full min-w-0">
+              <a
+                href={result.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full min-w-0 items-center gap-1.5 type-small text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
+                <span className="min-w-0 truncate">{result.sourceUrl}</span>
+              </a>
+            </div>
 
             <DialogFooter showCloseButton>
               <button

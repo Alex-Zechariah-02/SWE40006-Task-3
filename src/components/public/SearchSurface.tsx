@@ -1,24 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { SearchInput } from "@/components/public/SearchInput";
 import { ResultCard } from "@/components/public/ResultCard";
 import { PreviewModal } from "@/components/public/PreviewModal";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { writePendingImport } from "@/features/search/pendingImport";
 import type { NormalizedResult } from "@/types/search";
 
-export function SearchSurface() {
+export function SearchSurface({ initialQuery }: { initialQuery?: string }) {
   const router = useRouter();
   const clearSelectionTimerRef = useRef<number | null>(null);
-  const debounceTimerRef = useRef<number | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const didAutostartRef = useRef(false);
 
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery ?? "");
+  const [lastSearchedQuery, setLastSearchedQuery] = useState<string | null>(null);
   const [results, setResults] = useState<NormalizedResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -34,6 +35,7 @@ export function SearchSurface() {
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
+    setLastSearchedQuery(trimmedQuery);
     setIsLoading(true);
     setErrorMessage(null);
     setHasSearched(false);
@@ -94,11 +96,6 @@ export function SearchSurface() {
   function handleQueryChange(next: string) {
     setQuery(next);
 
-    if (debounceTimerRef.current !== null) {
-      window.clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
-    }
-
     const trimmed = next.trim();
     if (trimmed.length < 3) {
       if (abortControllerRef.current) abortControllerRef.current.abort();
@@ -109,20 +106,18 @@ export function SearchSurface() {
       setResults([]);
       return;
     }
+  }
 
-    debounceTimerRef.current = window.setTimeout(() => {
-      debounceTimerRef.current = null;
-      void runSearch(trimmed);
-    }, 500);
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const trimmed = query.trim();
+    if (trimmed.length < 3) return;
+    void runSearch(trimmed);
   }
 
   function handleRetry() {
     const trimmed = query.trim();
     if (trimmed.length < 3) return;
-    if (debounceTimerRef.current !== null) {
-      window.clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
-    }
     void runSearch(trimmed);
   }
 
@@ -152,23 +147,115 @@ export function SearchSurface() {
     }
   }
 
-  function handleSave(result: NormalizedResult) {
-    writePendingImport(result);
-    router.push("/login?next=/app/opportunities/import");
+  async function handleSave(result: NormalizedResult) {
+    // If already signed in, import immediately; otherwise fall back to the
+    // pending-import handoff flow (used by the required Phase 13 E2E path).
+    try {
+      const res = await fetch("/api/opportunities/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(result),
+      });
+
+      const json: unknown = await res.json().catch(() => null);
+
+      if (res.status === 401) {
+        writePendingImport(result);
+        router.push("/login?next=/app/opportunities/import");
+        return;
+      }
+
+      if (!res.ok) {
+        const message =
+          typeof json === "object" &&
+          json !== null &&
+          "error" in json &&
+          typeof (json as { error?: unknown }).error === "object" &&
+          (json as { error?: { message?: unknown } }).error !== null &&
+          typeof (json as { error?: { message?: unknown } }).error?.message ===
+            "string"
+            ? (json as { error: { message: string } }).error.message
+            : "Import failed. Please try again.";
+        setErrorMessage(message);
+        return;
+      }
+
+      const opportunityId =
+        typeof json === "object" &&
+        json !== null &&
+        "opportunityId" in json &&
+        typeof (json as { opportunityId?: unknown }).opportunityId === "string"
+          ? (json as { opportunityId: string }).opportunityId
+          : null;
+
+      if (!opportunityId) {
+        setErrorMessage("Import failed. Please try again.");
+        return;
+      }
+
+      router.push(`/app/opportunities/${opportunityId}`);
+    } catch {
+      setErrorMessage("Import failed. Please try again.");
+    }
   }
 
-  const showInitialState = query.trim().length < 3 && !hasSearched;
-  const showLoadingState =
-    query.trim().length >= 3 && isLoading && results.length === 0 && !errorMessage;
-  const showNoResults = query.trim().length >= 3 && hasSearched && results.length === 0 && !errorMessage;
+  const showInitialState =
+    !hasSearched && !isLoading && results.length === 0 && !errorMessage;
+  const showLoadingState = isLoading && results.length === 0 && !errorMessage;
+  const showNoResults =
+    query.trim().length >= 3 && hasSearched && results.length === 0 && !errorMessage;
+
+  useEffect(() => {
+    if (didAutostartRef.current) return;
+    didAutostartRef.current = true;
+
+    const trimmed = (initialQuery ?? "").trim();
+    if (trimmed.length < 3) return;
+    setLastSearchedQuery(trimmed);
+    void runSearch(trimmed);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const trimmedQuery = query.trim();
+  const canSearch = trimmedQuery.length >= 3;
+  const hasDirtyQuery =
+    canSearch && trimmedQuery !== (lastSearchedQuery ?? "");
 
   return (
     <div className="flex flex-col gap-6">
-      <SearchInput value={query} onChange={handleQueryChange} isLoading={isLoading} />
+      <div className="space-y-2">
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-3 sm:flex-row sm:items-center"
+          data-testid="search-form"
+        >
+          <div className="flex-1">
+            <SearchInput
+              value={query}
+              onChange={handleQueryChange}
+              isLoading={isLoading}
+            />
+          </div>
+          <Button
+            type="submit"
+            className="h-11 sm:px-5"
+            disabled={!canSearch || isLoading}
+          >
+            Search
+          </Button>
+        </form>
+
+        {hasDirtyQuery && !isLoading && (
+          <p className="type-small text-muted-foreground">
+            Press Enter or click Search to run your query.
+          </p>
+        )}
+      </div>
 
       {errorMessage && (
         <div
           role="status"
+          data-testid="search-error"
           className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           <div className="font-medium">Search unavailable</div>
@@ -194,8 +281,12 @@ export function SearchSurface() {
       {showInitialState ? (
         <EmptyState
           icon={Search}
-          title="Start searching"
-          description="Enter a query to find internships, graduate programs, and early-career roles."
+          title={canSearch ? "Ready to search" : "Start searching"}
+          description={
+            canSearch
+              ? "Press Enter or click Search to fetch results."
+              : "Enter a query to find internships, graduate programs, and early-career roles."
+          }
         />
       ) : showLoadingState ? (
         <EmptyState
@@ -218,7 +309,7 @@ export function SearchSurface() {
           }
         />
       ) : (
-        <div>
+        <div data-testid="search-results">
           {results.map((result) => (
             <ResultCard
               // Phase 08 deduplication ensures sourceUrl is unique per result set

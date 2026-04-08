@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Search } from "lucide-react";
+import { LandingSearch } from "@/components/public/LandingSearch";
 
 const BENEFITS = [
   {
@@ -31,6 +32,9 @@ export default function Page() {
           Track opportunities, manage applications, and stay on top of your job
           search with a structured workspace built for early-career professionals.
         </p>
+        <div className="max-w-xl">
+          <LandingSearch />
+        </div>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             href="/search"

@@ -37,7 +37,7 @@ export function StatCard({
       <CardContent className="pt-1">
         <div className="flex items-center gap-2">
           {Icon && (
-            <Icon className="h-4 w-4 text-muted-foreground" />
+            <Icon className="h-4 w-4 text-muted-foreground" aria-hidden />
           )}
           <span className="type-mono-label text-muted-foreground">{label}</span>
         </div>

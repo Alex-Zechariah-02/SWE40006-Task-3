@@ -10,8 +10,13 @@ const credentialsSchema = z.object({
   password: z.string().min(1),
 });
 
+const trustHost =
+  process.env.AUTH_TRUST_HOST?.trim().toLowerCase() === "true" ||
+  process.env.NODE_ENV !== "production";
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: { signIn: "/login" },
+  trustHost,
   session: {
     strategy: "jwt",
     maxAge: 60 * 60 * 24 * 7,

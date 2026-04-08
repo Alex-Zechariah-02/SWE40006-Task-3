@@ -70,11 +70,10 @@ function kualaLumpurTime(isoLocalWithOffset: string): Date {
   return new Date(isoLocalWithOffset);
 }
 
-async function upsertDemoUser() {
-  const email = "demo@careerdeck.test";
-  const name = "Alex Demo";
-  const password = "Demo123!";
-
+async function upsertUser(params: { email: string; name: string; password: string }) {
+  const email = params.email;
+  const name = params.name;
+  const password = params.password;
   const existing = await prisma.user.findUnique({
     where: { email },
     select: { id: true, passwordHash: true, name: true },
@@ -108,6 +107,30 @@ async function upsertDemoUser() {
     where: { email },
     data: updates,
     select: { id: true, email: true },
+  });
+}
+
+async function upsertDemoUser() {
+  return upsertUser({
+    email: "demo@careerdeck.test",
+    name: "Alex Demo",
+    password: "Demo123!",
+  });
+}
+
+async function upsertBlankUser() {
+  return upsertUser({
+    email: "blank@careerdeck.test",
+    name: "Alex Blank",
+    password: "Blank123!",
+  });
+}
+
+async function upsertE2EUser() {
+  return upsertUser({
+    email: "e2e@careerdeck.test",
+    name: "Alex E2E",
+    password: "E2E123!",
   });
 }
 
@@ -439,6 +462,12 @@ async function main() {
   console.log("Seeding CareerDeck demo dataset (idempotent).");
   console.log("Safety: do not reseed production on every deploy; run only for initial population or controlled refresh.");
 
+  // Keep accounts separated:
+  // - demo@... holds the canonical dataset for screenshots and manual review
+  // - blank@... stays empty for uncluttered manual testing
+  // - e2e@... is used by Playwright so the demo account is not polluted by E2E-created records
+  await upsertBlankUser();
+  await upsertE2EUser();
   const demoUser = await upsertDemoUser();
   const userId = demoUser.id;
 

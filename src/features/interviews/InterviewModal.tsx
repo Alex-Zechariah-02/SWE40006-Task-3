@@ -66,6 +66,12 @@ export function InterviewModal({
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
   const isEditing = !!interview?.id;
+  const [interviewType, setInterviewType] = React.useState<string>(
+    interview?.interviewType ?? ""
+  );
+  const [status, setStatus] = React.useState<string>(
+    interview?.status ?? "Scheduled"
+  );
 
   // Build datetime string from existing interview
   const scheduledStr = interview?.scheduledAt
@@ -79,6 +85,12 @@ export function InterviewModal({
         return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
       })()
     : "";
+
+  React.useEffect(() => {
+    if (!open) return;
+    setInterviewType(interview?.interviewType ?? "");
+    setStatus(interview?.status ?? "Scheduled");
+  }, [open, interview?.interviewType, interview?.status]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -94,11 +106,12 @@ export function InterviewModal({
 
     const body = {
       applicationId: interview?.applicationId ?? applicationId,
-      interviewType: form.get("interviewType"),
+      interviewType,
       scheduledAt: scheduledIso,
-      locationOrLink: (form.get("locationOrLink") as string) || null,
-      status: form.get("status"),
-      notes: (form.get("notes") as string) || null,
+      locationOrLink:
+        ((form.get("locationOrLink") as string) || "").trim() || undefined,
+      status,
+      notes: ((form.get("notes") as string) || "").trim() || undefined,
     };
 
     try {
@@ -152,9 +165,10 @@ export function InterviewModal({
             <Label>Interview Type</Label>
             <Select
               name="interviewType"
-              defaultValue={interview?.interviewType ?? ""}
+              value={interviewType}
+              onValueChange={(v) => setInterviewType(v ?? "")}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Interview type">
                 <SelectValue placeholder="Select type..." />
               </SelectTrigger>
               <SelectContent>
@@ -192,9 +206,10 @@ export function InterviewModal({
             <Label>Status</Label>
             <Select
               name="status"
-              defaultValue={interview?.status ?? "Scheduled"}
+              value={status}
+              onValueChange={(v) => setStatus(v ?? "Scheduled")}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Interview status">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

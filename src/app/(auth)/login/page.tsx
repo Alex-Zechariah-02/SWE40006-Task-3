@@ -8,31 +8,56 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { signIn } from "../../../../auth";
+import { redirect } from "next/navigation";
+import { LoginErrorBanner } from "./LoginErrorBanner";
+
+export const dynamic = "force-dynamic";
 
 function safeNextPath(value: unknown): string {
   if (typeof value !== "string") return "/app";
-  if (!value.startsWith("/")) return "/app";
-  if (value.startsWith("//")) return "/app";
-  if (value.includes("://")) return "/app";
-  return value;
+  // Next.js `searchParams` is usually decoded, but tolerate percent-encoded values
+  // (for example `%2Fapp%2Fopportunities`) to avoid silently discarding safe paths.
+  let decoded = value;
+  try {
+    decoded = decodeURIComponent(value);
+  } catch {
+    // ignore malformed encoding and fall back to the raw string
+  }
+
+  if (!decoded.startsWith("/")) return "/app";
+  if (decoded.startsWith("//")) return "/app";
+  if (decoded.includes("://")) return "/app";
+  return decoded;
 }
 
-function authErrorMessage(value: unknown): string | null {
-  if (value !== "CredentialsSignin") return null;
-  return "Invalid email or password.";
-}
-
-export default function Page({
+export default async function Page({
   searchParams,
 }: {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const nextPath = safeNextPath(searchParams?.next);
-  const errorMessage = authErrorMessage(searchParams?.error);
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const nextRaw = resolvedSearchParams.next;
+  const nextValue = Array.isArray(nextRaw) ? nextRaw[0] : nextRaw;
+  const nextPath = safeNextPath(nextValue);
 
   async function authenticate(formData: FormData) {
     "use server";
-    await signIn("credentials", formData);
+    try {
+      await signIn("credentials", formData);
+    } catch (err) {
+      const type =
+        typeof err === "object" && err !== null && "type" in err
+          ? String((err as { type?: unknown }).type)
+          : null;
+
+      if (type === "CredentialsSignin") {
+        redirect(
+          `/login?next=${encodeURIComponent(nextPath)}&error=CredentialsSignin`
+        );
+      }
+
+      throw err;
+    }
   }
 
   return (
@@ -44,14 +69,7 @@ export default function Page({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {errorMessage && (
-          <div
-            role="status"
-            className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            {errorMessage}
-          </div>
-        )}
+        <LoginErrorBanner />
 
         <form action={authenticate} className="space-y-4">
           <input type="hidden" name="redirectTo" value={nextPath} />

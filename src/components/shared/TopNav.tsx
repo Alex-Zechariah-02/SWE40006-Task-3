@@ -13,6 +13,8 @@ export function TopNav({
   userLabel,
   className,
 }: TopNavProps) {
+  const brandHref = variant === "app" ? "/app" : "/";
+
   async function signOutAction() {
     "use server";
     const { signOut } = await import("../../../auth");
@@ -27,7 +29,10 @@ export function TopNav({
       )}
     >
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-        <Link href="/" className="type-h3 font-display font-normal tracking-tight">
+        <Link
+          href={brandHref}
+          className="type-h3 font-display font-normal tracking-tight"
+        >
           CareerDeck
         </Link>
 
@@ -51,6 +56,12 @@ export function TopNav({
 
           {variant === "app" && (
             <>
+              <Link
+                href="/search"
+                className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                Search
+              </Link>
               <Link
                 href="/app"
                 className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"

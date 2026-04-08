@@ -11,10 +11,19 @@ const requestSchema = z.object({
   query: z.string().trim().min(3).max(120),
 });
 
+function isE2E(): boolean {
+  return process.env.CAREERDECK_E2E === "1";
+}
+
 type RateState = {
   tokens: number;
   updatedAt: number;
   lastSeenAt: number;
+};
+
+type CacheEntry = {
+  results: unknown[];
+  expiresAt: number;
 };
 
 const RATE_LIMIT_CAPACITY = 3;
@@ -22,8 +31,12 @@ const RATE_LIMIT_REFILL_MS = 2000;
 const RATE_LIMIT_MAX_ENTRIES = 800;
 const RATE_LIMIT_EVICT_OLDER_THAN_MS = 20 * 60 * 1000;
 
+const CACHE_TTL_MS = 10 * 60 * 1000;
+const CACHE_MAX_ENTRIES = 300;
+
 const globalForRateLimit = globalThis as unknown as {
   careerDeckSearchRateLimit?: Map<string, RateState>;
+  careerDeckSearchCache?: Map<string, CacheEntry>;
 };
 
 function getRateLimitMap(): Map<string, RateState> {
@@ -31,6 +44,13 @@ function getRateLimitMap(): Map<string, RateState> {
     globalForRateLimit.careerDeckSearchRateLimit = new Map();
   }
   return globalForRateLimit.careerDeckSearchRateLimit;
+}
+
+function getSearchCacheMap(): Map<string, CacheEntry> {
+  if (!globalForRateLimit.careerDeckSearchCache) {
+    globalForRateLimit.careerDeckSearchCache = new Map();
+  }
+  return globalForRateLimit.careerDeckSearchCache;
 }
 
 function clientIp(req: Request): string {
@@ -79,6 +99,46 @@ function allowRequest(ip: string): boolean {
   return true;
 }
 
+function cacheKey(query: string): string {
+  return query.trim().toLowerCase();
+}
+
+function cachedResults(enrichedQuery: string): unknown[] | null {
+  const key = cacheKey(enrichedQuery);
+  const map = getSearchCacheMap();
+  const entry = map.get(key);
+  if (!entry) return null;
+
+  const now = Date.now();
+  if (entry.expiresAt <= now) {
+    map.delete(key);
+    return null;
+  }
+
+  return entry.results;
+}
+
+function storeCachedResults(enrichedQuery: string, results: unknown[]) {
+  const key = cacheKey(enrichedQuery);
+  const map = getSearchCacheMap();
+  const now = Date.now();
+  map.set(key, { results, expiresAt: now + CACHE_TTL_MS });
+
+  if (map.size <= CACHE_MAX_ENTRIES) return;
+
+  // Evict expired entries first, then evict oldest insertions.
+  for (const [k, v] of map) {
+    if (v.expiresAt <= now) map.delete(k);
+    if (map.size <= CACHE_MAX_ENTRIES) return;
+  }
+
+  while (map.size > CACHE_MAX_ENTRIES) {
+    const firstKey = map.keys().next().value as string | undefined;
+    if (!firstKey) break;
+    map.delete(firstKey);
+  }
+}
+
 function enrichQuery(query: string): string {
   const trimmed = query.trim();
   const hasJobIntent = /(job|role|intern|internship|graduate|hiring|apply)/i.test(
@@ -95,13 +155,6 @@ function enrichQuery(query: string): string {
 
 export async function POST(req: Request) {
   const ip = clientIp(req);
-
-  if (!allowRequest(ip)) {
-    return NextResponse.json(
-      { error: { message: "Too many searches. Please wait a moment and try again." } },
-      { status: 429 }
-    );
-  }
 
   let json: unknown;
   try {
@@ -123,8 +176,65 @@ export async function POST(req: Request) {
 
   const enriched = enrichQuery(parsed.data.query);
 
+  if (!isE2E()) {
+    const cached = cachedResults(enriched);
+    if (cached) {
+      return NextResponse.json({ results: cached });
+    }
+
+    if (!allowRequest(ip)) {
+      return NextResponse.json(
+        { error: { message: "Too many searches. Please wait a moment and try again." } },
+        { status: 429 }
+      );
+    }
+  }
+
   try {
-    const response = await linkupStructuredSearch({ q: enriched, maxResults: 8 });
+    const response = isE2E()
+      ? {
+          results: [
+            {
+              title: "Software Engineering Intern",
+              companyName: "Intel Malaysia",
+              location: "Penang, Malaysia",
+              remoteMode: "OnSite",
+              opportunityType: "Internship",
+              sourceUrl:
+                "https://careerdeck.example/jobs/fixture-1?utm_source=e2e#apply",
+              snippet:
+                "Fixture listing used for deterministic local verification.",
+              postedDate: "2026-04-01",
+              confidence: 0.9,
+            },
+            {
+              title: "Software Engineering Intern",
+              companyName: "Intel Malaysia",
+              location: "Penang, Malaysia",
+              remoteMode: "OnSite",
+              opportunityType: "Internship",
+              sourceUrl:
+                "https://careerdeck.example/jobs/fixture-1/?utm_campaign=e2e",
+              snippet:
+                "Duplicate URL variant used to validate canonicalization and dedupe.",
+              postedDate: "2026-04-01",
+              confidence: 0.85,
+            },
+            {
+              title: "Graduate Software Engineer",
+              companyName: "PETRONAS Digital",
+              location: "Kuala Lumpur, Malaysia",
+              remoteMode: "Hybrid",
+              opportunityType: "Graduate Program",
+              sourceUrl: "https://careerdeck.example/jobs/fixture-2",
+              snippet:
+                "Second fixture listing used to validate normalized response shape.",
+              postedDate: "2026-04-02",
+              confidence: 0.82,
+            },
+          ],
+        }
+      : await linkupStructuredSearch({ q: enriched, maxResults: 8 });
 
     const normalized = normalizeResults(response.results, {
       provider: "Linkup",
@@ -139,7 +249,12 @@ export async function POST(req: Request) {
       return true;
     });
 
-    return NextResponse.json({ results: deduped.slice(0, 8) });
+    const finalResults = deduped.slice(0, 8);
+    if (!isE2E()) {
+      storeCachedResults(enriched, finalResults);
+    }
+
+    return NextResponse.json({ results: finalResults });
   } catch (error) {
     const status =
       error instanceof LinkupError && typeof error.status === "number"
