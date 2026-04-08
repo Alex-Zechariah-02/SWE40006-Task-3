@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ interface ActionItemRow {
   title: string;
   description: string | null;
   dueAt: string | null;
+  createdAt: string;
   priority: string;
   status: string;
   suggestedBySystem: boolean;
@@ -87,6 +88,7 @@ export function ActionItemListSurface({
   linkOptions,
 }: ActionItemListSurfaceProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [filters, setFilters] = React.useState<Record<FilterKey, string>>({
     status: "all",
     priority: "all",
@@ -107,11 +109,49 @@ export function ActionItemListSurface({
     setFilters((prev) => ({ ...prev, [key]: value }));
   }
 
+  React.useEffect(() => {
+    let status = searchParams.get("status");
+    if (status === "open") status = "openWork";
+    if (status === "completed") status = "completedWork";
+
+    const priority = searchParams.get("priority");
+    const linkedType = searchParams.get("linkedType");
+    const dueWindow = searchParams.get("dueWindow");
+    const companyId = searchParams.get("companyId");
+    const opportunityId = searchParams.get("opportunityId");
+    const applicationId = searchParams.get("applicationId");
+    const interviewId = searchParams.get("interviewId");
+    const sortParam = searchParams.get("sort");
+
+    setFilters((prev) => ({
+      ...prev,
+      status: status ?? prev.status,
+      priority: priority ?? prev.priority,
+      linkedType: linkedType ?? prev.linkedType,
+      dueWindow: dueWindow ?? prev.dueWindow,
+      companyId: companyId ?? prev.companyId,
+      opportunityId: opportunityId ?? prev.opportunityId,
+      applicationId: applicationId ?? prev.applicationId,
+      interviewId: interviewId ?? prev.interviewId,
+    }));
+
+    if (sortParam === "newest" || sortParam === "dueDate" || sortParam === "priority") {
+      setSort(sortParam);
+    }
+  }, [searchParams]);
+
   const filtered = React.useMemo(() => {
     let result: ActionItemRow[] = actionItems;
 
     if (filters.status !== "all") {
-      result = result.filter((i: ActionItemRow) => i.status === filters.status);
+      if (filters.status === "openWork") {
+        const openStatuses = new Set(["Open", "InProgress"]);
+        result = result.filter((i: ActionItemRow) => openStatuses.has(i.status));
+      } else if (filters.status === "completedWork") {
+        result = result.filter((i: ActionItemRow) => i.status === "Completed");
+      } else {
+        result = result.filter((i: ActionItemRow) => i.status === filters.status);
+      }
     }
     if (filters.priority !== "all") {
       result = result.filter((i: ActionItemRow) => i.priority === filters.priority);
@@ -136,10 +176,12 @@ export function ActionItemListSurface({
       const startToday = new Date(now);
       startToday.setHours(0, 0, 0, 0);
       const dueSoonUntil = new Date(startToday);
-      dueSoonUntil.setDate(dueSoonUntil.getDate() + 7);
+      dueSoonUntil.setDate(dueSoonUntil.getDate() + 3);
+      const terminalStatuses = new Set(["Completed", "Cancelled"]);
 
       result = result.filter((i: ActionItemRow) => {
         if (!i.dueAt) return filters.dueWindow === "noDue";
+        if (terminalStatuses.has(i.status)) return false;
         const due = new Date(i.dueAt);
 
         if (filters.dueWindow === "overdue") return due < startToday;
@@ -177,12 +219,22 @@ export function ActionItemListSurface({
       }
       if (sort === "priority") {
         const order = { High: 0, Medium: 1, Low: 2 };
-        return (
+        const priorityDiff = (
           (order[a.priority as keyof typeof order] ?? 1) -
           (order[b.priority as keyof typeof order] ?? 1)
         );
+        if (priorityDiff !== 0) return priorityDiff;
+
+        if (a.dueAt && b.dueAt) {
+          const dueDiff = new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime();
+          if (dueDiff !== 0) return dueDiff;
+        } else if (a.dueAt && !b.dueAt) {
+          return -1;
+        } else if (!a.dueAt && b.dueAt) {
+          return 1;
+        }
       }
-      return 0; // "newest" — already sorted by API
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
     return result;
@@ -219,6 +271,24 @@ export function ActionItemListSurface({
   const applicationOptions = linkOptions?.applications ?? [];
   const interviewOptions = linkOptions?.interviews ?? [];
 
+  async function readErrorMessage(res: Response, fallback: string) {
+    try {
+      const data = await res.clone().json();
+      if (typeof data?.error?.message === "string") return data.error.message;
+    } catch {
+      // ignore
+    }
+
+    try {
+      const text = await res.text();
+      if (text) return text.slice(0, 200);
+    } catch {
+      // ignore
+    }
+
+    return fallback;
+  }
+
   async function handleDelete(id: string) {
     setDeletePending(id);
     try {
@@ -226,8 +296,7 @@ export function ActionItemListSurface({
         method: "DELETE",
       });
       if (!res.ok) {
-        const data = await res.json();
-        toast.error(data.error?.message || "Failed to delete.");
+        toast.error(await readErrorMessage(res, "Failed to delete."));
         return;
       }
       toast.success("Action item deleted.");
@@ -240,23 +309,31 @@ export function ActionItemListSurface({
   return (
     <div>
       {/* Toolbar: create + view toggle */}
-      <div className="flex actionItems-center justify-between pb-4">
+      <div className="flex items-center justify-between pb-4">
         <Button onClick={() => setCreateOpen(true)} size="sm">
           <Plus className="mr-1.5 size-4" />
           New Action Item
         </Button>
-        <div className="flex actionItems-center gap-1">
+        <div className="flex items-center gap-1">
           <Button
             variant={viewMode === "list" ? "default" : "outline"}
-            size="xs"
+            size="icon"
+            className="size-10"
             onClick={() => setViewMode("list")}
+            aria-label="List view"
+            aria-pressed={viewMode === "list"}
+            title="List view"
           >
             <List className="size-3.5" />
           </Button>
           <Button
             variant={viewMode === "cards" ? "default" : "outline"}
-            size="xs"
+            size="icon"
+            className="size-10"
             onClick={() => setViewMode("cards")}
+            aria-label="Cards view"
+            aria-pressed={viewMode === "cards"}
+            title="Cards view"
           >
             <LayoutGrid className="size-3.5" />
           </Button>
@@ -264,7 +341,7 @@ export function ActionItemListSurface({
       </div>
 
       {/* Filters row */}
-      <div className="flex flex-wrap actionItems-center gap-2 pb-4">
+      <div className="flex flex-wrap items-center gap-2 pb-4">
         <Select
           value={filters.status}
           onValueChange={(v) => setFilter("status", v ?? "all")}
@@ -274,9 +351,8 @@ export function ActionItemListSurface({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="Open">Open</SelectItem>
-            <SelectItem value="InProgress">In Progress</SelectItem>
-            <SelectItem value="Completed">Completed</SelectItem>
+            <SelectItem value="openWork">Open work</SelectItem>
+            <SelectItem value="completedWork">Completed</SelectItem>
             <SelectItem value="Cancelled">Cancelled</SelectItem>
           </SelectContent>
         </Select>
@@ -323,7 +399,7 @@ export function ActionItemListSurface({
           <SelectContent>
             <SelectItem value="all">All due dates</SelectItem>
             <SelectItem value="overdue">Overdue</SelectItem>
-            <SelectItem value="dueSoon">Due soon (7 days)</SelectItem>
+            <SelectItem value="dueSoon">Due soon (within 3 days)</SelectItem>
             <SelectItem value="noDue">No due date</SelectItem>
           </SelectContent>
         </Select>
@@ -408,6 +484,7 @@ export function ActionItemListSurface({
               item={item}
               onEdit={() => setEditItem(item)}
               onDelete={() => handleDelete(item.id)}
+              isDeleting={deletePending === item.id}
             />
           ))}
         </div>
@@ -483,9 +560,9 @@ function ActionItemRowItem({
   };
 
   return (
-    <div className="flex actionItems-start justify-between gap-4 px-4 py-3 transition-colors hover:bg-muted/40">
+    <div className="flex items-start justify-between gap-4 px-4 py-3 transition-colors hover:bg-muted/40">
       <div className="min-w-0 flex-1">
-        <div className="flex actionItems-center gap-2">
+        <div className="flex items-center gap-2">
           <span className="type-body font-medium text-foreground truncate">
             {item.title}
           </span>
@@ -500,7 +577,7 @@ function ActionItemRowItem({
             {item.description}
           </p>
         )}
-        <div className="mt-1 flex flex-wrap actionItems-center gap-x-3 gap-y-1">
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
           <Badge variant={priorityCfg.variant} className="type-small gap-1">
             <Flag className="size-3" />
             {priorityCfg.label}
@@ -509,7 +586,7 @@ function ActionItemRowItem({
             {statusCfg.label}
           </Badge>
           {item.dueAt && (
-            <span className="inline-flex actionItems-center gap-1 type-small text-muted-foreground">
+            <span className="inline-flex items-center gap-1 type-small text-muted-foreground">
               <Calendar className="size-3" />
               {new Date(item.dueAt).toLocaleDateString("en-GB", {
                 day: "numeric",
@@ -533,21 +610,25 @@ function ActionItemRowItem({
         </div>
       </div>
 
-      <div className="flex shrink-0 actionItems-center gap-1">
+      <div className="flex shrink-0 items-center gap-1">
         <Button
           variant="ghost"
-          size="icon-xs"
+          size="icon"
+          className="size-10"
           onClick={onEdit}
           disabled={isDeleting}
+          aria-label={`Edit ${item.title}`}
         >
           <Pencil className="size-3.5" />
         </Button>
         <Button
           variant="ghost"
-          size="icon-xs"
+          size="icon"
           onClick={onDelete}
           disabled={isDeleting}
-          className="text-muted-foreground hover:text-destructive"
+          aria-label={`Delete ${item.title}`}
+          title="Delete"
+          className="size-10 text-muted-foreground hover:text-destructive"
         >
           <Trash2 className="size-3.5" />
         </Button>

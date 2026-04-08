@@ -2,7 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -46,25 +48,66 @@ const REMOTE_LABELS: Record<string, string> = {
   Remote: "Remote",
 };
 
-type FilterKey = "stage" | "sourceType" | "opportunityType";
+type FilterKey = "stage" | "sourceType" | "opportunityType" | "company" | "tag";
 type SortKey = "newest" | "deadline" | "company";
 
 export function OpportunityListSurface({
   opportunities,
 }: OpportunityListSurfaceProps) {
+  const searchParams = useSearchParams();
   const [filters, setFilters] = React.useState<Record<FilterKey, string>>({
     stage: "all",
     sourceType: "all",
     opportunityType: "all",
+    company: "all",
+    tag: "all",
   });
   const [sort, setSort] = React.useState<SortKey>("newest");
+  const [deadlineWindow, setDeadlineWindow] = React.useState<string>("all");
 
   function setFilter(key: FilterKey, value: string) {
     setFilters((prev) => ({ ...prev, [key]: value }));
   }
 
+  React.useEffect(() => {
+    const stage = searchParams.get("stage");
+    const sourceType = searchParams.get("sourceType");
+    const opportunityType = searchParams.get("opportunityType");
+    const company = searchParams.get("company");
+    const tag = searchParams.get("tag");
+    const sortParam = searchParams.get("sort");
+    const deadlineWindowParam = searchParams.get("deadlineWindow");
+
+    setFilters((prev) => ({
+      ...prev,
+      stage: stage ?? prev.stage,
+      sourceType: sourceType ?? prev.sourceType,
+      opportunityType: opportunityType ?? prev.opportunityType,
+      company: company ?? prev.company,
+      tag: tag ?? prev.tag,
+    }));
+
+    if (sortParam === "newest" || sortParam === "deadline" || sortParam === "company") {
+      setSort(sortParam);
+    }
+
+    setDeadlineWindow(deadlineWindowParam ?? "all");
+  }, [searchParams]);
+
   const filtered = React.useMemo(() => {
     let result = opportunities;
+
+    if (deadlineWindow === "near") {
+      const now = new Date();
+      const sevenDaysFromNow = new Date(
+        now.getTime() + 7 * 24 * 60 * 60 * 1000
+      );
+      result = result.filter((o) => {
+        if (!o.deadline) return false;
+        const deadline = new Date(o.deadline);
+        return deadline > now && deadline <= sevenDaysFromNow;
+      });
+    }
 
     if (filters.stage !== "all") {
       result = result.filter((o) => o.stage === filters.stage);
@@ -76,6 +119,12 @@ export function OpportunityListSurface({
       result = result.filter(
         (o) => o.opportunityType === filters.opportunityType
       );
+    }
+    if (filters.company !== "all") {
+      result = result.filter((o) => o.company.id === filters.company);
+    }
+    if (filters.tag !== "all") {
+      result = result.filter((o) => o.tags.includes(filters.tag));
     }
 
     result = [...result].sort((a, b) => {
@@ -92,10 +141,20 @@ export function OpportunityListSurface({
     });
 
     return result;
-  }, [opportunities, filters, sort]);
+  }, [opportunities, filters, sort, deadlineWindow]);
 
   const sourceTypes = React.useMemo(
     () => [...new Set(opportunities.map((o) => o.sourceType))],
+    [opportunities]
+  );
+
+  const uniqueCompanies = React.useMemo(
+    () => [...new Map(opportunities.map((o) => [o.company.id, o.company])).values()],
+    [opportunities]
+  );
+
+  const allTags = React.useMemo(
+    () => [...new Set(opportunities.flatMap((o) => o.tags))],
     [opportunities]
   );
 
@@ -134,6 +193,25 @@ export function OpportunityListSurface({
           </SelectContent>
         </Select>
 
+        {uniqueCompanies.length > 0 && (
+          <Select
+            value={filters.company}
+            onValueChange={(v) => setFilter("company", v ?? "all")}
+          >
+            <SelectTrigger className="w-auto">
+              <SelectValue placeholder="Company" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All companies</SelectItem>
+              {uniqueCompanies.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
         <Select
           value={filters.opportunityType}
           onValueChange={(v) => setFilter("opportunityType", v ?? "all")}
@@ -150,6 +228,25 @@ export function OpportunityListSurface({
             <SelectItem value="Contract">Contract</SelectItem>
           </SelectContent>
         </Select>
+
+        {allTags.length > 0 && (
+          <Select
+            value={filters.tag}
+            onValueChange={(v) => setFilter("tag", v ?? "all")}
+          >
+            <SelectTrigger className="w-auto">
+              <SelectValue placeholder="Tag" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All tags</SelectItem>
+              {allTags.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {t}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         <div className="ml-auto">
           <Select
@@ -177,6 +274,14 @@ export function OpportunityListSurface({
             opportunities.length > 0
               ? "Try adjusting your filters."
               : "Search for opportunities or add one manually."
+          }
+          action={
+            <Link
+              href="/search"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              Search opportunities
+            </Link>
           }
         />
       ) : (

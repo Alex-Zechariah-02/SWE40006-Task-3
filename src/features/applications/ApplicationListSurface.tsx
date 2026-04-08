@@ -2,7 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -23,7 +25,12 @@ interface ApplicationRow {
   tags: string[];
   archivedAt: string | null;
   createdAt: string;
-  opportunity: { id: string; title: string };
+  opportunity: {
+    id: string;
+    title: string;
+    opportunityType: string;
+    deadline: string | null;
+  };
   company: { id: string; name: string };
 }
 
@@ -46,14 +53,17 @@ const PRIORITY_LABELS: Record<string, string> = {
   High: "High",
 };
 
-type FilterKey = "stage" | "priority" | "tag" | "activeOnly" | "includeArchived";
-type SortKey = "newest" | "appliedDate" | "company" | "priority";
+type FilterKey = "stage" | "company" | "opportunityType" | "priority" | "tag" | "activeOnly" | "includeArchived";
+type SortKey = "newest" | "deadline" | "urgent" | "company";
 
 export function ApplicationListSurface({
   applications,
 }: ApplicationListSurfaceProps) {
+  const searchParams = useSearchParams();
   const [filters, setFilters] = React.useState<Record<FilterKey, string>>({
     stage: "all",
+    company: "all",
+    opportunityType: "all",
     priority: "all",
     tag: "all",
     activeOnly: "true",
@@ -64,6 +74,37 @@ export function ApplicationListSurface({
   function setFilter(key: FilterKey, value: string) {
     setFilters((prev) => ({ ...prev, [key]: value }));
   }
+
+  React.useEffect(() => {
+    const stage = searchParams.get("stage");
+    const company = searchParams.get("company");
+    const opportunityType = searchParams.get("opportunityType");
+    const priority = searchParams.get("priority");
+    const tag = searchParams.get("tag");
+    const activeOnly = searchParams.get("activeOnly");
+    const includeArchived = searchParams.get("includeArchived");
+    const sortParam = searchParams.get("sort");
+
+    setFilters((prev) => ({
+      ...prev,
+      stage: stage ?? prev.stage,
+      company: company ?? prev.company,
+      opportunityType: opportunityType ?? prev.opportunityType,
+      priority: priority ?? prev.priority,
+      tag: tag ?? prev.tag,
+      activeOnly: activeOnly ?? prev.activeOnly,
+      includeArchived: includeArchived ?? prev.includeArchived,
+    }));
+
+    if (
+      sortParam === "newest" ||
+      sortParam === "deadline" ||
+      sortParam === "urgent" ||
+      sortParam === "company"
+    ) {
+      setSort(sortParam);
+    }
+  }, [searchParams]);
 
   const filtered = React.useMemo(() => {
     let result = applications;
@@ -80,6 +121,12 @@ export function ApplicationListSurface({
     if (filters.stage !== "all") {
       result = result.filter((a) => a.currentStage === filters.stage);
     }
+    if (filters.company !== "all") {
+      result = result.filter((a) => a.company.id === filters.company);
+    }
+    if (filters.opportunityType !== "all") {
+      result = result.filter((a) => a.opportunity.opportunityType === filters.opportunityType);
+    }
     if (filters.priority !== "all") {
       result = result.filter((a) => a.priority === filters.priority);
     }
@@ -90,22 +137,34 @@ export function ApplicationListSurface({
     const priorityOrder = { High: 0, Medium: 1, Low: 2 };
 
     result = [...result].sort((a, b) => {
-      if (sort === "appliedDate") {
-        if (!a.appliedDate && !b.appliedDate) return 0;
-        if (!a.appliedDate) return 1;
-        if (!b.appliedDate) return -1;
-        return (
-          new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime()
-        );
-      }
       if (sort === "company") {
         return a.company.name.localeCompare(b.company.name);
       }
-      if (sort === "priority") {
-        return (
+      if (sort === "deadline") {
+        const aDeadline = a.opportunity.deadline ? new Date(a.opportunity.deadline) : null;
+        const bDeadline = b.opportunity.deadline ? new Date(b.opportunity.deadline) : null;
+
+        if (!aDeadline && !bDeadline) return 0;
+        if (!aDeadline) return 1;
+        if (!bDeadline) return -1;
+        return aDeadline.getTime() - bDeadline.getTime();
+      }
+      if (sort === "urgent") {
+        const pri =
           (priorityOrder[a.priority as keyof typeof priorityOrder] ?? 1) -
-          (priorityOrder[b.priority as keyof typeof priorityOrder] ?? 1)
-        );
+          (priorityOrder[b.priority as keyof typeof priorityOrder] ?? 1);
+        if (pri !== 0) return pri;
+
+        const aDeadline = a.opportunity.deadline ? new Date(a.opportunity.deadline) : null;
+        const bDeadline = b.opportunity.deadline ? new Date(b.opportunity.deadline) : null;
+        if (aDeadline && bDeadline) {
+          const deadlineDiff = aDeadline.getTime() - bDeadline.getTime();
+          if (deadlineDiff !== 0) return deadlineDiff;
+        } else if (aDeadline && !bDeadline) {
+          return -1;
+        } else if (!aDeadline && bDeadline) {
+          return 1;
+        }
       }
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
@@ -117,6 +176,20 @@ export function ApplicationListSurface({
     () => [...new Set(applications.flatMap((a) => a.tags))],
     [applications]
   );
+
+  const uniqueCompanies = React.useMemo(
+    () => [...new Map(applications.map((a) => [a.company.id, a.company])).values()],
+    [applications]
+  );
+
+  const OPPORTUNITY_TYPES = ["Internship", "GraduateProgram", "FullTime", "PartTime", "Contract"];
+  const OPPORTUNITY_TYPE_LABELS: Record<string, string> = {
+    Internship: "Internship",
+    GraduateProgram: "Graduate Program",
+    FullTime: "Full-time",
+    PartTime: "Part-time",
+    Contract: "Contract",
+  };
 
   return (
     <div>
@@ -134,6 +207,42 @@ export function ApplicationListSurface({
             {Object.keys(STAGE_LABELS).map((s) => (
               <SelectItem key={s} value={s}>
                 {STAGE_LABELS[s]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {uniqueCompanies.length > 0 && (
+          <Select
+            value={filters.company}
+            onValueChange={(v) => setFilter("company", v ?? "all")}
+          >
+            <SelectTrigger className="w-auto">
+              <SelectValue placeholder="Company" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All companies</SelectItem>
+              {uniqueCompanies.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        <Select
+          value={filters.opportunityType}
+          onValueChange={(v) => setFilter("opportunityType", v ?? "all")}
+        >
+          <SelectTrigger className="w-auto">
+            <SelectValue placeholder="Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            {OPPORTUNITY_TYPES.map((t) => (
+              <SelectItem key={t} value={t}>
+                {OPPORTUNITY_TYPE_LABELS[t]}
               </SelectItem>
             ))}
           </SelectContent>
@@ -209,15 +318,15 @@ export function ApplicationListSurface({
             <SelectTrigger className="w-auto">
               <SelectValue placeholder="Sort" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">Newest</SelectItem>
-              <SelectItem value="appliedDate">Date applied</SelectItem>
-              <SelectItem value="company">Company A-Z</SelectItem>
-              <SelectItem value="priority">Priority</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+          <SelectContent>
+            <SelectItem value="newest">Newest</SelectItem>
+            <SelectItem value="deadline">Nearest deadline</SelectItem>
+            <SelectItem value="urgent">Most urgent</SelectItem>
+            <SelectItem value="company">Company A-Z</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+    </div>
 
       {/* Results */}
       {filtered.length === 0 ? (
@@ -228,6 +337,14 @@ export function ApplicationListSurface({
             applications.length > 0
               ? "Try adjusting your filters."
               : "Convert an opportunity to start tracking applications."
+          }
+          action={
+            <Link
+              href="/app/opportunities"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              Browse opportunities
+            </Link>
           }
         />
       ) : (

@@ -65,12 +65,14 @@ interface ActionItemCardProps {
   item: ActionItemCardData;
   onEdit: () => void;
   onDelete: () => void;
+  isDeleting?: boolean;
 }
 
 export function ActionItemCard({
   item,
   onEdit,
   onDelete,
+  isDeleting = false,
 }: ActionItemCardProps) {
   const priorityCfg = PRIORITY_CONFIG[item.priority] ?? {
     label: item.priority,
@@ -91,26 +93,31 @@ export function ActionItemCard({
             </span>
           </CardTitle>
           <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                className="opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <MoreVertical className="size-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-10 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
+                  aria-label={`More actions for ${item.title}`}
+                  title="More actions"
+                >
+                  <MoreVertical className="size-3.5" />
+                </Button>
+              }
+            />
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onEdit}>
+              <DropdownMenuItem onClick={onEdit} disabled={isDeleting}>
                 <Pencil className="mr-1.5 size-3.5" />
                 Edit
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={onDelete}
+                disabled={isDeleting}
                 className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="mr-1.5 size-3.5" />
-                Delete
+                {isDeleting ? "Deleting..." : "Delete"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

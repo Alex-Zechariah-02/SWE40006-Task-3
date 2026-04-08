@@ -68,7 +68,9 @@ export async function listApplications(
     where,
     include: {
       company: { select: { id: true, name: true } },
-      opportunity: { select: { id: true, title: true } },
+      opportunity: {
+        select: { id: true, title: true, opportunityType: true, deadline: true },
+      },
     },
     orderBy: filters.sort === "company"
       ? { company: { name: "asc" } }

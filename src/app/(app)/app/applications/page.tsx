@@ -25,7 +25,12 @@ export default async function Page() {
     archivedAt: a.archivedAt ? a.archivedAt.toISOString() : null,
     createdAt: a.createdAt.toISOString(),
     company: a.company,
-    opportunity: a.opportunity,
+    opportunity: {
+      id: a.opportunity.id,
+      title: a.opportunity.title,
+      opportunityType: a.opportunity.opportunityType,
+      deadline: a.opportunity.deadline ? a.opportunity.deadline.toISOString() : null,
+    },
   }));
 
   return (

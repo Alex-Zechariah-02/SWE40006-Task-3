@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LabelValue } from "@/components/shared/LabelValue";
+import { buttonVariants } from "@/components/ui/button";
 import { Building2 } from "lucide-react";
 
 interface CompanyRow {
@@ -29,6 +30,14 @@ export function CompanyListSurface({
         icon={Building2}
         title="No companies yet"
         description="Companies will appear here as you track opportunities or add them directly."
+        action={
+          <Link
+            href="/search"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            Search opportunities
+          </Link>
+        }
       />
     );
   }

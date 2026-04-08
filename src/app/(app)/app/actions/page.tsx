@@ -6,6 +6,7 @@ import { listOpportunities } from "@/lib/db/opportunities";
 import { listApplications } from "@/lib/db/applications";
 import { listInterviews } from "@/lib/db/interviews";
 import { ActionItemListSurface } from "@/features/actions/ActionItemListSurface";
+import { ActionHeader } from "./ActionHeader";
 import { prisma } from "@/lib/prisma";
 
 export default async function Page() {
@@ -62,6 +63,7 @@ export default async function Page() {
       <PageHeader
         title="Actions"
         description="Upcoming tasks and reminders."
+        action={<ActionHeader linkOptions={linkOptions} />}
       />
       <ActionItemListSurface actionItems={serialized} linkOptions={linkOptions} />
     </div>

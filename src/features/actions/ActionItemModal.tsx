@@ -80,6 +80,7 @@ export function ActionItemModal({
 }: ActionItemModalProps) {
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
+  const [errors, setErrors] = React.useState<Record<string, string[]>>({});
 
   const dueDateStr =
     mode === "edit" && existingItem?.dueAt
@@ -89,8 +90,28 @@ export function ActionItemModal({
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setPending(true);
+    setErrors({});
 
     const form = new FormData(e.currentTarget);
+
+    async function readError(res: Response, fallback: string) {
+      try {
+        const data = await res.clone().json();
+        if (data?.error?.fields) setErrors(data.error.fields);
+        if (typeof data?.error?.message === "string") return data.error.message;
+      } catch {
+        // ignore
+      }
+
+      try {
+        const text = await res.text();
+        if (text) return text.slice(0, 200);
+      } catch {
+        // ignore
+      }
+
+      return fallback;
+    }
 
     try {
       if (mode === "create") {
@@ -117,8 +138,7 @@ export function ActionItemModal({
         });
 
         if (!res.ok) {
-          const data = await res.json();
-          toast.error(data.error?.message || "Failed to create action item.");
+          toast.error(await readError(res, "Failed to create action item."));
           return;
         }
 
@@ -139,8 +159,7 @@ export function ActionItemModal({
         });
 
         if (!res.ok) {
-          const data = await res.json();
-          toast.error(data.error?.message || "Failed to update action item.");
+          toast.error(await readError(res, "Failed to update action item."));
           return;
         }
 
@@ -178,6 +197,9 @@ export function ActionItemModal({
               defaultValue={existingItem?.title ?? ""}
               placeholder="e.g. Follow up on application status"
             />
+            {errors.title && (
+              <p className="type-small text-destructive">{errors.title[0]}</p>
+            )}
           </div>
 
           <div className="grid gap-1.5">
@@ -190,6 +212,11 @@ export function ActionItemModal({
               defaultValue={existingItem?.description ?? ""}
               placeholder="Optional details about this action item..."
             />
+            {errors.description && (
+              <p className="type-small text-destructive">
+                {errors.description[0]}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-3">
@@ -201,6 +228,9 @@ export function ActionItemModal({
                 type="date"
                 defaultValue={dueDateStr}
               />
+              {errors.dueAt && (
+                <p className="type-small text-destructive">{errors.dueAt[0]}</p>
+              )}
             </div>
             <div className="grid gap-1.5">
               <Label>Priority</Label>
@@ -219,6 +249,11 @@ export function ActionItemModal({
                   ))}
                 </SelectContent>
               </Select>
+              {errors.priority && (
+                <p className="type-small text-destructive">
+                  {errors.priority[0]}
+                </p>
+              )}
             </div>
             <div className="grid gap-1.5">
               <Label>Status</Label>
@@ -237,6 +272,9 @@ export function ActionItemModal({
                   ))}
                 </SelectContent>
               </Select>
+              {errors.status && (
+                <p className="type-small text-destructive">{errors.status[0]}</p>
+              )}
             </div>
           </div>
 

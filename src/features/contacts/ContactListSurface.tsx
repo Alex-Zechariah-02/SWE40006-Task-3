@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -24,6 +24,7 @@ import {
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LabelValue } from "@/components/shared/LabelValue";
 import { Users, Trash2 } from "lucide-react";
+import { ContactCreateModal } from "./ContactCreateModal";
 
 interface ContactRow {
   id: string;
@@ -103,6 +104,18 @@ export function ContactListSurface({
             contacts.length > 0
               ? "Try adjusting your filter."
               : "Add contacts to track people at your target companies."
+          }
+          action={
+            companies.length > 0 ? (
+              <ContactCreateModal companies={companies} />
+            ) : (
+              <Link
+                href="/app/companies"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                Add a company
+              </Link>
+            )
           }
         />
       ) : (

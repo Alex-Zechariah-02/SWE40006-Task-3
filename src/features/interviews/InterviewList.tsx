@@ -168,16 +168,20 @@ export function InterviewList({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="size-7"
+                    className="size-10"
                     onClick={() => handleEdit(interview)}
+                    aria-label="Edit interview"
+                    title="Edit"
                   >
                     <Pencil className="size-3.5" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="size-7 text-destructive hover:text-destructive"
+                    className="size-10 text-destructive hover:text-destructive"
                     onClick={() => handleDelete(interview.id)}
+                    aria-label="Delete interview"
+                    title="Delete"
                   >
                     <Trash2 className="size-3.5" />
                   </Button>
