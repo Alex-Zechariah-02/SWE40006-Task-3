@@ -1,23 +1,20 @@
 import { PageHeader } from "@/components/shared/PageHeader";
+import { PageContainer } from "@/components/shared/PageContainer";
 import { getSessionOrRedirect } from "@/lib/auth/session";
+import { getUserIdFromSessionOrNull } from "@/lib/auth/user";
 import { listContacts } from "@/lib/db/contacts";
 import { listCompanies } from "@/lib/db/companies";
 import { ContactListSurface } from "@/features/contacts/ContactListSurface";
 import { ContactCreateModal } from "@/features/contacts/ContactCreateModal";
-import { prisma } from "@/lib/prisma";
 
 export default async function Page() {
   const session = await getSessionOrRedirect("/app/contacts");
-  const user = await prisma.user.findUnique({
-    where: { email: session.user?.email ?? "" },
-    select: { id: true },
-  });
-
-  if (!user) return null;
+  const userId = await getUserIdFromSessionOrNull(session);
+  if (!userId) return null;
 
   const [contacts, companies] = await Promise.all([
-    listContacts(user.id),
-    listCompanies(user.id),
+    listContacts(userId),
+    listCompanies(userId),
   ]);
 
   const serializedContacts = contacts.map((c) => ({
@@ -26,6 +23,8 @@ export default async function Page() {
     title: c.title,
     email: c.email,
     phone: c.phone,
+    linkedinUrl: c.linkedinUrl,
+    notes: c.notes,
     company: c.company,
   }));
 
@@ -35,7 +34,7 @@ export default async function Page() {
   }));
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 py-10">
+    <PageContainer width="wide">
       <PageHeader
         title="Contacts"
         description="People at your tracked companies."
@@ -45,6 +44,6 @@ export default async function Page() {
         contacts={serializedContacts}
         companies={companyOptions}
       />
-    </div>
+    </PageContainer>
   );
 }

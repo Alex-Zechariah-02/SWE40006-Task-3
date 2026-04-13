@@ -49,7 +49,7 @@ export function TagInput({
   return (
     <div
       className={cn(
-        "flex min-h-9 flex-wrap items-center gap-1.5 rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-sm transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50",
+        "flex min-h-9 flex-wrap items-center gap-2 rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-sm transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50",
         className
       )}
       onClick={() => inputRef.current?.focus()}
@@ -78,7 +78,7 @@ export function TagInput({
         onKeyDown={handleKeyDown}
         onBlur={() => addTag(input)}
         placeholder={value.length === 0 ? placeholder : ""}
-        className="min-w-[80px] flex-1 bg-transparent py-0.5 text-sm outline-none placeholder:text-muted-foreground"
+        className="min-w-[80px] flex-1 bg-transparent py-1 text-sm outline-none placeholder:text-muted-foreground"
       />
     </div>
   );

@@ -1,20 +1,17 @@
 import { PageHeader } from "@/components/shared/PageHeader";
+import { PageContainer } from "@/components/shared/PageContainer";
 import { getSessionOrRedirect } from "@/lib/auth/session";
+import { getUserIdFromSessionOrNull } from "@/lib/auth/user";
 import { listOpportunities } from "@/lib/db/opportunities";
 import { OpportunityListSurface } from "@/features/opportunities/OpportunityListSurface";
 import { OpportunityCreateModal } from "@/features/opportunities/OpportunityCreateModal";
-import { prisma } from "@/lib/prisma";
 
 export default async function Page() {
   const session = await getSessionOrRedirect("/app/opportunities");
-  const user = await prisma.user.findUnique({
-    where: { email: session.user?.email ?? "" },
-    select: { id: true },
-  });
+  const userId = await getUserIdFromSessionOrNull(session);
+  if (!userId) return null;
 
-  if (!user) return null;
-
-  const opportunities = await listOpportunities(user.id);
+  const opportunities = await listOpportunities(userId);
 
   const serialized = opportunities.map((o) => ({
     id: o.id,
@@ -31,13 +28,13 @@ export default async function Page() {
   }));
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 py-10">
+    <PageContainer width="wide">
       <PageHeader
         title="Opportunities"
         description="Saved and discovered roles."
         action={<OpportunityCreateModal />}
       />
       <OpportunityListSurface opportunities={serialized} />
-    </div>
+    </PageContainer>
   );
 }

@@ -69,6 +69,9 @@ test("flow 2: opportunity -> convert to application -> add interview -> add acti
     );
   }
 
+  // Interview list updates via router.refresh(), but RSC caching can make it stale in tests.
+  await page.reload();
+
   await expect(
     page.getByRole("main").getByText("Technical Interview", { exact: true })
   ).toBeVisible();
@@ -79,9 +82,21 @@ test("flow 2: opportunity -> convert to application -> add interview -> add acti
   await expect(actionDialog).toBeVisible();
 
   await actionDialog.getByLabel("Title").fill("E2E action item");
+  const actionPost = page.waitForResponse((res) => {
+    return res.url().includes("/api/actions") && res.request().method() === "POST";
+  });
   await actionDialog.getByRole("button", { name: "Create Action Item" }).click();
+  const actionRes = await actionPost;
+  if (actionRes.status() !== 201) {
+    const body = await actionRes.json().catch(() => null);
+    throw new Error(
+      `Action create failed: status=${actionRes.status()} body=${JSON.stringify(body)}`
+    );
+  }
   await expect(actionDialog).toBeHidden();
 
+  // Action list updates via router.refresh(), but RSC caching can make it stale in tests.
+  await page.reload();
   await expect(page.getByText("E2E action item")).toBeVisible();
 
   // Best-effort cleanup: archive records so repeated runs do not pollute default lists.

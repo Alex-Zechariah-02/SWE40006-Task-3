@@ -16,8 +16,20 @@ test("companies: create via modal, save notes, archive and restore", async ({
   await dialog.getByLabel("Name").fill(companyName);
   await dialog.getByLabel("Industry").fill("Testing");
   await dialog.getByLabel("Location").fill("Kuala Lumpur");
+
+  const createResPromise = page.waitForResponse((res) => {
+    return (
+      res.url().includes("/api/companies") &&
+      res.request().method() === "POST" &&
+      res.status() === 201
+    );
+  });
   await dialog.getByRole("button", { name: "Create Company" }).click();
+  const createRes = await createResPromise;
+  expect(createRes.ok()).toBeTruthy();
   await expect(dialog).toBeHidden();
+
+  await page.reload();
 
   await expect(page.getByRole("link", { name: companyName })).toBeVisible();
   await page.getByRole("link", { name: companyName }).click();
@@ -37,12 +49,32 @@ test("companies: create via modal, save notes, archive and restore", async ({
   await page.getByRole("button", { name: "Archive" }).click();
   const archiveDialog = page.getByRole("dialog", { name: "Archive Company?" });
   await expect(archiveDialog).toBeVisible();
+
+  const archiveResPromise = page.waitForResponse((res) => {
+    return (
+      res.url().includes("/api/companies/") &&
+      res.request().method() === "PATCH"
+    );
+  });
   await archiveDialog.getByRole("button", { name: "Archive" }).click();
-  await expect(page.getByText("Archived")).toBeVisible();
+  const archiveRes = await archiveResPromise;
+  expect(archiveRes.ok()).toBeTruthy();
+  await page.reload();
+  await expect(page.locator('[data-slot="badge"]', { hasText: "Archived" }).first()).toBeVisible();
 
   await page.getByRole("button", { name: "Unarchive" }).first().click();
   const unarchiveDialog = page.getByRole("dialog", { name: "Unarchive Company?" });
   await expect(unarchiveDialog).toBeVisible();
+
+  const unarchiveResPromise = page.waitForResponse((res) => {
+    return (
+      res.url().includes("/api/companies/") &&
+      res.request().method() === "PATCH"
+    );
+  });
   await unarchiveDialog.getByRole("button", { name: "Unarchive" }).click();
-  await expect(page.getByText("Archived")).toBeHidden();
+  const unarchiveRes = await unarchiveResPromise;
+  expect(unarchiveRes.ok()).toBeTruthy();
+  await page.reload();
+  await expect(page.locator('[data-slot="badge"]', { hasText: "Archived" })).toHaveCount(0);
 });

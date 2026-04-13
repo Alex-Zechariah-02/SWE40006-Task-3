@@ -1,12 +1,15 @@
-import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface EmptyStateProps {
-  icon?: LucideIcon;
+  icon: LucideIcon;
   title: string;
   description?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+  /** @deprecated Pass actionLabel + onAction instead */
   action?: React.ReactNode;
-  headingAs?: "h2" | "h3";
   className?: string;
 }
 
@@ -14,11 +17,11 @@ export function EmptyState({
   icon: Icon,
   title,
   description,
+  actionLabel,
+  onAction,
   action,
-  headingAs = "h2",
   className,
 }: EmptyStateProps) {
-  const Heading = headingAs;
   return (
     <div
       className={cn(
@@ -26,16 +29,26 @@ export function EmptyState({
         className
       )}
     >
-      {Icon && (
-        <Icon className="mb-3 h-10 w-10 text-muted-foreground/50" aria-hidden />
-      )}
-      <Heading className="type-h3 font-medium">{title}</Heading>
+      <div className="mb-4 flex items-center justify-center rounded-full bg-muted p-3">
+        <Icon className="size-8 text-muted-foreground" strokeWidth={1.5} />
+      </div>
+      <p className="type-h4 font-medium text-foreground">{title}</p>
       {description && (
-        <p className="mt-1 max-w-sm type-body text-muted-foreground">
+        <p className="mt-2 type-small text-muted-foreground/70 max-w-xs">
           {description}
         </p>
       )}
-      {action && <div className="mt-4">{action}</div>}
+      {actionLabel && onAction && (
+        <Button
+          variant="default"
+          size="sm"
+          className="mt-5"
+          onClick={onAction}
+        >
+          {actionLabel}
+        </Button>
+      )}
+      {action && <div className="mt-5">{action}</div>}
     </div>
   );
 }

@@ -25,17 +25,33 @@ test("contacts: create and delete", async ({ page }) => {
 
   await dialog.getByLabel("Name").fill(contactName);
   await dialog.getByLabel("Email").fill(`e2e-${Date.now()}@example.test`);
+  const createResPromise = page.waitForResponse((res) => {
+    return res.url().includes("/api/contacts") && res.request().method() === "POST";
+  });
   await dialog.getByRole("button", { name: "Create Contact" }).click();
+  const createRes = await createResPromise;
+  if (createRes.status() !== 201) {
+    const body = await createRes.json().catch(() => null);
+    throw new Error(
+      `Contact create failed: status=${createRes.status()} body=${JSON.stringify(body)}`
+    );
+  }
   await expect(dialog).toBeHidden();
 
-  const deleteButton = page.getByRole("button", { name: `Delete ${contactName}` });
-  await expect(deleteButton).toBeVisible();
+  // Contacts list updates via router.refresh(), but RSC caching can make it stale in tests.
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Contacts" })).toBeVisible();
 
-  await deleteButton.click();
+  const rowActions = page.getByRole("button", { name: `Actions for ${contactName}` });
+  await expect(rowActions).toBeVisible();
+
+  await rowActions.click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   const confirmDialog = page.getByRole("dialog", { name: "Delete contact?" });
   await expect(confirmDialog).toBeVisible();
   await confirmDialog.getByRole("button", { name: "Delete" }).click();
   await expect(confirmDialog).toBeHidden();
 
-  await expect(deleteButton).toBeHidden();
+  await page.reload();
+  await expect(page.getByText(contactName, { exact: true })).toBeHidden();
 });

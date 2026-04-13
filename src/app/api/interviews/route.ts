@@ -1,55 +1,29 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "../../../../auth";
-import { prisma } from "@/lib/prisma";
+import { requireUserOrResponse } from "@/lib/api/auth";
+import { jsonError } from "@/lib/api/errors";
+import { readJsonOrResponse } from "@/lib/api/json";
+import { validateOrResponse } from "@/lib/api/validation";
 import { interviewCreateSchema } from "@/lib/validation/interview";
 import { createInterview } from "@/lib/db/interviews";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const session = await auth();
-  const email = session?.user?.email;
-  if (!email) {
-    return NextResponse.json(
-      { error: { message: "You must be signed in." } },
-      { status: 401 }
-    );
-  }
+  const authed = await requireUserOrResponse();
+  if (!authed.ok) return authed.response;
 
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    return NextResponse.json(
-      { error: { message: "Account not found." } },
-      { status: 401 }
-    );
-  }
+  const body = await readJsonOrResponse(req);
+  if (!body.ok) return body.response;
 
-  let json: unknown;
-  try {
-    json = await req.json();
-  } catch {
-    return NextResponse.json(
-      { error: { message: "Invalid request body." } },
-      { status: 400 }
-    );
-  }
-
-  const parsed = interviewCreateSchema.safeParse(json);
-  if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: {
-          message: "Validation failed.",
-          fields: parsed.error.flatten().fieldErrors,
-        },
-      },
-      { status: 400 }
-    );
-  }
+  const parsed = validateOrResponse(interviewCreateSchema, body.json, {
+    message: "Validation failed.",
+    includeFieldErrors: true,
+  });
+  if (!parsed.ok) return parsed.response;
 
   try {
-    const interview = await createInterview(user.id, {
+    const interview = await createInterview(authed.user.id, {
       applicationId: parsed.data.applicationId,
       interviewType: parsed.data.interviewType,
       scheduledAt: parsed.data.scheduledAt,
@@ -60,6 +34,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ interview }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to create interview.";
-    return NextResponse.json({ error: { message } }, { status: 500 });
+    return jsonError(message, 500);
   }
 }

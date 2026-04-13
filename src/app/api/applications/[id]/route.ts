@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "../../../../../auth";
-import { prisma } from "@/lib/prisma";
+import { requireUserOrResponse } from "@/lib/api/auth";
+import { readJsonOrResponse } from "@/lib/api/json";
+import { validateOrResponse } from "@/lib/api/validation";
 import { applicationUpdateSchema } from "@/lib/validation/application";
+import { guardApplicationStageChange } from "@/lib/db/applications.stageGuards";
 import {
   updateApplication,
   archiveApplication,
   unarchiveApplication,
+  deleteApplication,
 } from "@/lib/db/applications";
 
 export const runtime = "nodejs";
@@ -14,40 +17,19 @@ export const runtime = "nodejs";
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: Request, context: RouteContext) {
-  const session = await auth();
-  const email = session?.user?.email;
-  if (!email) {
-    return NextResponse.json(
-      { error: { message: "You must be signed in." } },
-      { status: 401 }
-    );
-  }
-
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    return NextResponse.json(
-      { error: { message: "Account not found." } },
-      { status: 401 }
-    );
-  }
+  const authed = await requireUserOrResponse();
+  if (!authed.ok) return authed.response;
 
   const { id } = await context.params;
 
-  let json: unknown;
-  try {
-    json = await req.json();
-  } catch {
-    return NextResponse.json(
-      { error: { message: "Invalid request body." } },
-      { status: 400 }
-    );
-  }
+  const body = await readJsonOrResponse(req);
+  if (!body.ok) return body.response;
+  const json = body.json;
+  const actionBody = json as Record<string, unknown>;
 
-  const body = json as Record<string, unknown>;
-
-  if (body.action === "archive") {
+  if (actionBody.action === "archive") {
     try {
-      await archiveApplication(id, user.id);
+      await archiveApplication(id, authed.user.id);
       return NextResponse.json({ archived: true });
     } catch {
       return NextResponse.json(
@@ -57,9 +39,9 @@ export async function PATCH(req: Request, context: RouteContext) {
     }
   }
 
-  if (body.action === "unarchive") {
+  if (actionBody.action === "unarchive") {
     try {
-      await unarchiveApplication(id, user.id);
+      await unarchiveApplication(id, authed.user.id);
       return NextResponse.json({ archived: false });
     } catch {
       return NextResponse.json(
@@ -69,64 +51,31 @@ export async function PATCH(req: Request, context: RouteContext) {
     }
   }
 
-  const parsed = applicationUpdateSchema.safeParse(json);
-  if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: {
-          message: "Validation failed.",
-          fields: parsed.error.flatten().fieldErrors,
-        },
-      },
-      { status: 400 }
-    );
-  }
+  const parsed = validateOrResponse(applicationUpdateSchema, json, {
+    message: "Validation failed.",
+    includeFieldErrors: true,
+  });
+  if (!parsed.ok) return parsed.response;
 
   if (parsed.data.currentStage) {
-    const current = await prisma.application.findFirst({
-      where: { id, userId: user.id },
-      select: {
-        id: true,
-        currentStage: true,
-        offerDetail: { select: { id: true } },
-        rejectionDetail: { select: { id: true } },
-      },
+    const guard = await guardApplicationStageChange({
+      applicationId: id,
+      userId: authed.user.id,
+      nextStage: parsed.data.currentStage,
     });
 
-    if (!current) {
-      return NextResponse.json(
-        { error: { message: "Application not found." } },
-        { status: 404 }
-      );
-    }
-
-    if (current.offerDetail && parsed.data.currentStage !== "Offer") {
+    if (!guard.ok) {
       return NextResponse.json(
         {
-          error: {
-            message:
-              "Stage change blocked. Remove offer detail before changing away from Offer.",
-          },
+          error: { message: guard.message },
         },
-        { status: 409 }
-      );
-    }
-
-    if (current.rejectionDetail && parsed.data.currentStage !== "Rejected") {
-      return NextResponse.json(
-        {
-          error: {
-            message:
-              "Stage change blocked. Remove rejection detail before changing away from Rejected.",
-          },
-        },
-        { status: 409 }
+        { status: guard.status }
       );
     }
   }
 
   try {
-    const updated = await updateApplication(id, user.id, {
+    const updated = await updateApplication(id, authed.user.id, {
       currentStage: parsed.data.currentStage,
       priority: parsed.data.priority,
       appliedDate: parsed.data.appliedDate === "" ? null : parsed.data.appliedDate,
@@ -137,6 +86,23 @@ export async function PATCH(req: Request, context: RouteContext) {
   } catch {
     return NextResponse.json(
       { error: { message: "Application not found or update failed." } },
+      { status: 404 }
+    );
+  }
+}
+
+export async function DELETE(_req: Request, context: RouteContext) {
+  const authed = await requireUserOrResponse();
+  if (!authed.ok) return authed.response;
+
+  const { id } = await context.params;
+
+  try {
+    await deleteApplication(id, authed.user.id);
+    return NextResponse.json({ deleted: true });
+  } catch {
+    return NextResponse.json(
+      { error: { message: "Application not found." } },
       { status: 404 }
     );
   }

@@ -4,7 +4,6 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
@@ -16,6 +15,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+
+const INPUT_CLASSES =
+  "h-8 w-full min-w-0 rounded-md border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40";
 
 type OfferDetail = {
   id: string;
@@ -71,11 +74,11 @@ export function OfferDetailModal({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        toast.error(data.error?.message || "Failed to save offer detail.");
+        toast.error(data.error?.message || "Failed to save.");
         return;
       }
 
-      toast.success(isEditing ? "Offer detail updated." : "Offer detail saved.");
+      toast.success(isEditing ? "Updated." : "Saved.");
       onOpenChange(false);
       router.refresh();
     } finally {
@@ -96,40 +99,46 @@ export function OfferDetailModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="grid gap-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid gap-2">
               <Label htmlFor="offer-offeredDate">Offered date</Label>
-              <Input
+              <input
                 id="offer-offeredDate"
                 name="offeredDate"
                 type="date"
                 defaultValue={offeredDateStr}
+                data-slot="input"
+                className={cn(INPUT_CLASSES)}
               />
             </div>
-            <div className="grid gap-1.5">
+            <div className="grid gap-2">
               <Label htmlFor="offer-responseDeadline">Response deadline</Label>
-              <Input
+              <input
                 id="offer-responseDeadline"
                 name="responseDeadline"
                 type="date"
                 defaultValue={responseDeadlineStr}
+                data-slot="input"
+                className={cn(INPUT_CLASSES)}
               />
             </div>
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="offer-decisionStatus">Decision status</Label>
-            <Input
+            <input
               id="offer-decisionStatus"
               name="decisionStatus"
               required={!isEditing}
               maxLength={100}
               defaultValue={offerDetail?.decisionStatus ?? ""}
               placeholder="e.g. Pending, Accepted, Declined"
+              data-slot="input"
+              className={cn(INPUT_CLASSES)}
             />
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="offer-compensationNote">Compensation</Label>
             <Textarea
               id="offer-compensationNote"
@@ -141,7 +150,7 @@ export function OfferDetailModal({
             />
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="offer-notes">Notes</Label>
             <Textarea
               id="offer-notes"
@@ -166,4 +175,3 @@ export function OfferDetailModal({
     </Dialog>
   );
 }
-

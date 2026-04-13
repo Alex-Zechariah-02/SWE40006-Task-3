@@ -1,19 +1,16 @@
 import { PageHeader } from "@/components/shared/PageHeader";
+import { PageContainer } from "@/components/shared/PageContainer";
 import { getSessionOrRedirect } from "@/lib/auth/session";
+import { getUserIdFromSessionOrNull } from "@/lib/auth/user";
 import { listApplications } from "@/lib/db/applications";
 import { ApplicationListSurface } from "@/features/applications/ApplicationListSurface";
-import { prisma } from "@/lib/prisma";
 
 export default async function Page() {
   const session = await getSessionOrRedirect("/app/applications");
-  const user = await prisma.user.findUnique({
-    where: { email: session.user?.email ?? "" },
-    select: { id: true },
-  });
+  const userId = await getUserIdFromSessionOrNull(session);
+  if (!userId) return null;
 
-  if (!user) return null;
-
-  const applications = await listApplications(user.id, { includeArchived: true });
+  const applications = await listApplications(userId, { includeArchived: true });
 
   const serialized = applications.map((a) => ({
     id: a.id,
@@ -34,12 +31,12 @@ export default async function Page() {
   }));
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 py-10">
+    <PageContainer width="wide">
       <PageHeader
         title="Applications"
         description="Track your active and past applications."
       />
       <ApplicationListSurface applications={serialized} />
-    </div>
+    </PageContainer>
   );
 }

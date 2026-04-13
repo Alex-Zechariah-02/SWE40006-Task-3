@@ -27,23 +27,24 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
+import { getInterviewTypeLabel } from "@/features/interviews/interviewLabels";
 
 const PRIORITY_CONFIG: Record<
   string,
-  { label: string; variant: "default" | "destructive" | "secondary" | "outline" }
+  { label: string; variant: "default" | "destructive" | "secondary" | "outline" | "success" }
 > = {
   High: { label: "High", variant: "destructive" },
   Medium: { label: "Medium", variant: "default" },
-  Low: { label: "Low", variant: "secondary" },
+  Low: { label: "Low", variant: "outline" },
 };
 
 const STATUS_CONFIG: Record<
   string,
-  { label: string; variant: "default" | "destructive" | "secondary" | "outline" }
+  { label: string; variant: "default" | "destructive" | "secondary" | "outline" | "success" }
 > = {
   Open: { label: "Open", variant: "outline" },
   InProgress: { label: "In Progress", variant: "default" },
-  Completed: { label: "Completed", variant: "secondary" },
+  Completed: { label: "Completed", variant: "success" },
   Cancelled: { label: "Cancelled", variant: "outline" },
 };
 
@@ -84,7 +85,7 @@ export function ActionItemCard({
   };
 
   return (
-    <Card className="group">
+    <Card className="group flex flex-col h-full hover-lift">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="flex-1">
@@ -124,7 +125,7 @@ export function ActionItemCard({
         </div>
       </CardHeader>
 
-      <CardContent className="pb-2">
+      <CardContent className="pb-2 flex-1">
         {item.description && (
           <p className="type-small text-muted-foreground line-clamp-2 mb-2">
             {item.description}
@@ -183,7 +184,7 @@ export function ActionItemCard({
           {item.interview && (
             <span className="inline-flex items-center gap-1 type-small text-muted-foreground">
               <Users className="size-3" />
-              {item.interview.interviewType}
+              {getInterviewTypeLabel(item.interview.interviewType)}
             </span>
           )}
         </div>
@@ -191,7 +192,7 @@ export function ActionItemCard({
 
       <CardFooter className="pt-0">
         {item.suggestedBySystem && (
-          <span className="type-mono-label text-muted-foreground/60">
+          <span className="type-caption text-muted-foreground/60">
             System-suggested
           </span>
         )}

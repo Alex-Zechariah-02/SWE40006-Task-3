@@ -1,55 +1,29 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "../../../../auth";
-import { prisma } from "@/lib/prisma";
+import { requireUserOrResponse } from "@/lib/api/auth";
+import { jsonError } from "@/lib/api/errors";
+import { readJsonOrResponse } from "@/lib/api/json";
+import { validateOrResponse } from "@/lib/api/validation";
 import { companyCreateSchema } from "@/lib/validation/company";
 import { createCompany } from "@/lib/db/companies";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const session = await auth();
-  const email = session?.user?.email;
-  if (!email) {
-    return NextResponse.json(
-      { error: { message: "You must be signed in." } },
-      { status: 401 }
-    );
-  }
+  const authed = await requireUserOrResponse();
+  if (!authed.ok) return authed.response;
 
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    return NextResponse.json(
-      { error: { message: "Account not found." } },
-      { status: 401 }
-    );
-  }
+  const body = await readJsonOrResponse(req);
+  if (!body.ok) return body.response;
 
-  let json: unknown;
-  try {
-    json = await req.json();
-  } catch {
-    return NextResponse.json(
-      { error: { message: "Invalid request body." } },
-      { status: 400 }
-    );
-  }
-
-  const parsed = companyCreateSchema.safeParse(json);
-  if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: {
-          message: "Validation failed.",
-          fields: parsed.error.flatten().fieldErrors,
-        },
-      },
-      { status: 400 }
-    );
-  }
+  const parsed = validateOrResponse(companyCreateSchema, body.json, {
+    message: "Validation failed.",
+    includeFieldErrors: true,
+  });
+  if (!parsed.ok) return parsed.response;
 
   try {
-    const result = await createCompany(user.id, {
+    const result = await createCompany(authed.user.id, {
       name: parsed.data.name,
       website: parsed.data.website || undefined,
       location: parsed.data.location,
@@ -66,9 +40,6 @@ export async function POST(req: Request) {
       { status: result.created ? 201 : 200 }
     );
   } catch {
-    return NextResponse.json(
-      { error: { message: "Failed to create company." } },
-      { status: 500 }
-    );
+    return jsonError("Failed to create company.", 500);
   }
 }

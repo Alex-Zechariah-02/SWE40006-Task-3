@@ -41,8 +41,20 @@ test("opportunities: create, edit stage, archive and restore", async ({ page }) 
   await selectTriggers.nth(1).click();
   await page.locator('[data-slot="select-item"]', { hasText: "On-site" }).click();
 
+  const createResPromise = page.waitForResponse((res) => {
+    return res.url().includes("/api/opportunities") && res.request().method() === "POST";
+  });
   await dialog.getByRole("button", { name: "Create Opportunity" }).click();
+  const createRes = await createResPromise;
+  if (createRes.status() !== 201) {
+    const body = await createRes.json().catch(() => null);
+    throw new Error(
+      `Opportunity create failed: status=${createRes.status()} body=${JSON.stringify(body)}`
+    );
+  }
   await expect(dialog).toBeHidden();
+
+  await page.reload();
 
   await expect(page.getByRole("link", { name: title })).toBeVisible();
   await page.getByRole("link", { name: title }).click();
@@ -58,22 +70,54 @@ test("opportunities: create, edit stage, archive and restore", async ({ page }) 
   await editSelectTriggers.nth(2).click();
   await page.locator('[data-slot="select-item"]', { hasText: "Shortlisted" }).click();
 
+  const stageUpdateResPromise = page.waitForResponse((res) => {
+    return (
+      res.url().includes("/api/opportunities/") &&
+      res.request().method() === "PATCH" &&
+      res.ok()
+    );
+  });
   await editDialog.getByRole("button", { name: "Save Changes" }).click();
+  await stageUpdateResPromise;
   await expect(editDialog).toBeHidden();
+
+  await page.reload();
 
   await expect(page.getByText("Shortlisted")).toBeVisible();
 
   await page.getByRole("button", { name: "Archive" }).click();
   const archiveDialog = page.getByRole("dialog", { name: "Archive Opportunity?" });
   await expect(archiveDialog).toBeVisible();
+
+  const archiveResPromise = page.waitForResponse((res) => {
+    return (
+      res.url().includes("/api/opportunities/") &&
+      res.request().method() === "PATCH"
+    );
+  });
   await archiveDialog.getByRole("button", { name: "Archive" }).click();
 
-  await expect(page.getByText("Archived")).toBeVisible();
+  const archiveRes = await archiveResPromise;
+  expect(archiveRes.ok()).toBeTruthy();
+  await page.reload();
+
+  await expect(page.locator('[data-slot="badge"]', { hasText: "Archived" }).first()).toBeVisible();
 
   await page.getByRole("button", { name: "Unarchive" }).first().click();
   const unarchiveDialog = page.getByRole("dialog", { name: "Unarchive Opportunity?" });
   await expect(unarchiveDialog).toBeVisible();
+
+  const unarchiveResPromise = page.waitForResponse((res) => {
+    return (
+      res.url().includes("/api/opportunities/") &&
+      res.request().method() === "PATCH"
+    );
+  });
   await unarchiveDialog.getByRole("button", { name: "Unarchive" }).click();
 
-  await expect(page.getByText("Archived")).toBeHidden();
+  const unarchiveRes = await unarchiveResPromise;
+  expect(unarchiveRes.ok()).toBeTruthy();
+  await page.reload();
+
+  await expect(page.locator('[data-slot="badge"]', { hasText: "Archived" })).toHaveCount(0);
 });

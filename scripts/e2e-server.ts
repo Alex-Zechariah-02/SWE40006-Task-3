@@ -129,6 +129,34 @@ function resolveNextBin(): string {
   return candidate;
 }
 
+function resolveStandaloneServer(): string | null {
+  const candidate = path.join(process.cwd(), ".next", "standalone", "server.js");
+  return fs.existsSync(candidate) ? candidate : null;
+}
+
+function ensureStandaloneAssets() {
+  const rootDir = process.cwd();
+  const standaloneDir = path.join(rootDir, ".next", "standalone");
+
+  // When running the standalone server, Next expects assets relative to the
+  // standalone directory:
+  // - .next/static -> .next/standalone/.next/static
+  // - public/      -> .next/standalone/public
+  const staticSrc = path.join(rootDir, ".next", "static");
+  const staticDest = path.join(standaloneDir, ".next", "static");
+  if (fs.existsSync(staticSrc)) {
+    fs.mkdirSync(path.dirname(staticDest), { recursive: true });
+    fs.cpSync(staticSrc, staticDest, { recursive: true, force: true });
+  }
+
+  const publicSrc = path.join(rootDir, "public");
+  const publicDest = path.join(standaloneDir, "public");
+  if (fs.existsSync(publicSrc)) {
+    fs.mkdirSync(standaloneDir, { recursive: true });
+    fs.cpSync(publicSrc, publicDest, { recursive: true, force: true });
+  }
+}
+
 async function runCmd(
   command: string,
   args: string[],
@@ -181,10 +209,25 @@ async function main() {
   await runCmd(pnpm, ["run", "prisma:deploy"], { env: envForDb });
   await runCmd(pnpm, ["run", "prisma:seed"], { env: envForDb });
 
-  const nextBin = resolveNextBin();
-  const server = spawn(process.execPath, [nextBin, "start", "-p", String(port)], {
+  const envForServer: NodeJS.ProcessEnv = {
+    ...envForDb,
+    NODE_ENV: "production",
+    NEXT_TELEMETRY_DISABLED: "1",
+    PORT: String(port),
+  };
+
+  const standaloneServer = resolveStandaloneServer();
+  if (standaloneServer) {
+    ensureStandaloneAssets();
+  }
+
+  const serverArgs = standaloneServer
+    ? [standaloneServer]
+    : [resolveNextBin(), "start", "-p", String(port)];
+
+  const server = spawn(process.execPath, serverArgs, {
     stdio: "inherit",
-    env: envForDb,
+    env: envForServer,
   });
 
   const shutdown = (signal: NodeJS.Signals) => {

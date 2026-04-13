@@ -4,8 +4,18 @@ import { Input as InputPrimitive } from "@base-ui/react/input"
 import { cn } from "@/lib/utils"
 
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+  const isControlled = props.value !== undefined
+  const uncontrolledKey = isControlled
+    ? undefined
+    : `defaultValue:${
+        Array.isArray(props.defaultValue)
+          ? props.defaultValue.join(",")
+          : String(props.defaultValue)
+      }`
+
   return (
     <InputPrimitive
+      key={uncontrolledKey}
       type={type}
       data-slot="input"
       className={cn(

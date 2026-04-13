@@ -1,60 +1,19 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
+import type { DashboardData } from "./dashboard.types";
+import {
+  buildRecentActivity,
+  type RecentApplicationRow,
+  type RecentOpportunityRow,
+} from "./dashboard.recentActivity";
+import { getDashboardWindows } from "./dashboard.windows";
 
-export interface DashboardData {
-  activeApplications: number;
-  upcomingInterviews: number;
-  followUpsDue: number;
-  deadlinesNear: number;
-  savedOpportunities: number;
-  nextInterview: {
-    id: string;
-    interviewType: string;
-    scheduledAt: string;
-    applicationTitle: string;
-    companyName: string;
-  } | null;
-  nearestDeadline: {
-    id: string;
-    title: string;
-    companyName: string;
-    deadline: string;
-  } | null;
-  urgentActionItems: Array<{
-    id: string;
-    title: string;
-    dueAt: string;
-    priority: string;
-    status: string;
-    isOverdue: boolean;
-  }>;
-  recentActivity: Array<{
-    id: string;
-    type: "opportunity" | "application";
-    title: string;
-    detail: string;
-    updatedAt: string;
-  }>;
-  companyWatchlist: Array<{
-    id: string;
-    name: string;
-    activeApplications: number;
-    upcomingDeadlines: number;
-  }>;
-}
+export type { DashboardData } from "./dashboard.types";
 
 export async function getDashboardData(userId: string): Promise<DashboardData> {
-  const now = new Date();
-  const startToday = new Date(now);
-  startToday.setHours(0, 0, 0, 0);
-
-  const fortyEightHoursFromNow = new Date(now.getTime() + 48 * 60 * 60 * 1000);
-  const fourteenDaysFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-
-  // Dashboard cards are validated against a fixed Blueprint dataset.
-  // Use day-based windows for stability across time-of-day.
-  const deadlinesNearUntil = new Date(startToday.getTime() + 21 * 24 * 60 * 60 * 1000);
+  const { now, startToday, fortyEightHoursFromNow, fourteenDaysFromNow, deadlinesNearUntil } =
+    getDashboardWindows();
 
   const [
     activeApplications,
@@ -249,19 +208,10 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     }),
   ]);
 
-  const recentActivity = [...recentOpportunities.map((opp) => ({
-    id: opp.id,
-    type: "opportunity" as const,
-    title: opp.title,
-    detail: `${opp.company.name} \u2022 ${opp.stage}`,
-    updatedAt: opp.updatedAt.toISOString(),
-  })), ...recentApplications.map((app) => ({
-    id: app.id,
-    type: "application" as const,
-    title: app.opportunity.title,
-    detail: `${app.company.name} \u2022 ${app.currentStage}`,
-    updatedAt: app.updatedAt.toISOString(),
-  }))].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 8);
+  const recentActivity = buildRecentActivity(
+    recentOpportunities as RecentOpportunityRow[],
+    recentApplications as RecentApplicationRow[]
+  );
 
   return {
     activeApplications,

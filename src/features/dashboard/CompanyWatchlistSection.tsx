@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Building2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { EmptyState } from "@/components/shared/EmptyState";
 import { buttonVariants } from "@/components/ui/button";
+
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 interface CompanyWatchlistSectionProps {
   companies: Array<{
@@ -18,52 +17,43 @@ interface CompanyWatchlistSectionProps {
 export function CompanyWatchlistSection({
   companies,
 }: CompanyWatchlistSectionProps) {
-  if (companies.length === 0) {
-    return (
-      <EmptyState
-        icon={Building2}
-        title="No companies to watch."
-        description="Add companies to track their opportunities."
-        action={
-          <Link
-            href="/app/companies"
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-          >
-            View companies
-          </Link>
-        }
-      />
-    );
-  }
-
   return (
-    <Card>
-      <CardContent className="pt-4">
-        <p className="type-mono-label text-muted-foreground">
-          Company Watchlist
-        </p>
-        <ul className="mt-3 space-y-3">
-          {companies.map((company) => (
-            <li key={company.id} className="flex items-center justify-between">
-              <Link
-                href={`/app/companies/${company.id}`}
-                className="type-body font-medium text-foreground transition-colors hover:text-primary"
-              >
-                {company.name}
-              </Link>
-              <div className="flex shrink-0 items-center gap-3">
-                <span className="type-mono-label text-muted-foreground">
-                  {company.activeApplications} application
-                  {company.activeApplications !== 1 ? "s" : ""}
-                </span>
-                <span className="type-mono-label text-muted-foreground">
-                  {company.upcomingDeadlines} deadline
-                  {company.upcomingDeadlines !== 1 ? "s" : ""}
-                </span>
-              </div>
-            </li>
-          ))}
-        </ul>
+    <Card size="sm">
+      <CardHeader>
+        <CardTitle className="type-section-label text-muted-foreground">
+          Watchlist
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {companies.length === 0 ? (
+          <p className="type-small text-muted-foreground py-2">
+            No companies tracked yet.
+          </p>
+        ) : (
+          <>
+            <ul className="grid gap-2">
+              {companies.slice(0, 5).map((company) => (
+                <li key={company.id} className="flex items-center justify-between gap-2">
+                  <Link
+                    href={`/app/companies/${company.id}`}
+                    className="type-small font-medium text-foreground transition-colors hover:text-primary truncate"
+                  >
+                    {company.name}
+                  </Link>
+                  <span className="type-mono-label shrink-0 text-muted-foreground text-[0.65rem]">
+                    {company.activeApplications} app{company.activeApplications !== 1 ? "s" : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/app/companies"
+              className={buttonVariants({ variant: "link", size: "sm" }) + " mt-2 px-0"}
+            >
+              View all →
+            </Link>
+          </>
+        )}
       </CardContent>
     </Card>
   );

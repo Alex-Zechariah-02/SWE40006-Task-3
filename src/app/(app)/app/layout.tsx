@@ -8,12 +8,14 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const session = await getSessionOrRedirect("/app");
-  const userLabel = session.user?.name ?? session.user?.email ?? "Account";
+  const userName = session.user?.name ?? "Account";
+  const userEmail = session.user?.email ?? null;
 
   return (
-    <AppShell nav={<TopNav variant="app" userLabel={userLabel} />}>
+    <AppShell
+      nav={<TopNav variant="app" userLabel={userName} userEmail={userEmail} />}
+    >
       {children}
     </AppShell>
   );
 }
-

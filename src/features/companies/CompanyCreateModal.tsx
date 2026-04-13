@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { FormMessage } from "@/components/ui/form-message";
 import {
   Dialog,
   DialogContent,
@@ -51,13 +52,11 @@ export function CompanyCreateModal() {
 
       if (!res.ok) {
         if (data.error?.fields) setErrors(data.error.fields);
-        toast.error(data.error?.message || "Failed to create company.");
+        toast.error(data.error?.message || "Failed to create.");
         return;
       }
 
-      toast.success(
-        data.created ? "Company created." : "Company already exists."
-      );
+      toast.success(data.created ? "Created." : "Already exists.");
       setOpen(false);
       router.refresh();
     } finally {
@@ -83,29 +82,29 @@ export function CompanyCreateModal() {
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4">
-          <div className="grid gap-1.5">
-            <Label htmlFor="co-name">Name</Label>
-            <Input id="co-name" name="name" required maxLength={200} placeholder="e.g. Intel Malaysia" />
-            {errors.name && <p className="type-small text-destructive">{errors.name[0]}</p>}
+          <div className="grid gap-2">
+            <Label htmlFor="co-name" required>Name</Label>
+            <Input id="co-name" name="name" required aria-describedby="co-name-error" maxLength={200} placeholder="e.g. Intel Malaysia" />
+            <FormMessage id="co-name-error" error>{errors.name?.[0]}</FormMessage>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid gap-2">
               <Label htmlFor="co-industry">Industry</Label>
               <Input id="co-industry" name="industry" maxLength={200} placeholder="e.g. Semiconductors" />
             </div>
-            <div className="grid gap-1.5">
+            <div className="grid gap-2">
               <Label htmlFor="co-location">Location</Label>
               <Input id="co-location" name="location" maxLength={200} placeholder="e.g. Penang" />
             </div>
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="co-website">Website</Label>
             <Input id="co-website" name="website" type="url" placeholder="https://..." />
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="co-notes">Notes</Label>
             <Textarea id="co-notes" name="generalNotes" rows={3} maxLength={5000} placeholder="General notes about the company..." />
           </div>

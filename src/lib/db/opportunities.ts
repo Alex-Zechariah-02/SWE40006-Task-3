@@ -66,7 +66,14 @@ export async function getOpportunity(id: string, userId: string) {
     where: { id, userId },
     include: {
       company: { select: { id: true, name: true } },
-      application: { select: { id: true, currentStage: true } },
+      application: {
+        select: {
+          id: true,
+          currentStage: true,
+          priority: true,
+          appliedDate: true,
+        },
+      },
     },
   });
 }
@@ -201,4 +208,26 @@ export async function unarchiveOpportunity(id: string, userId: string) {
     where: { id, userId },
     data: { archivedAt: null },
   });
+}
+
+export async function deleteOpportunity(id: string, userId: string) {
+  const opportunity = await prisma.opportunity.findFirst({
+    where: { id, userId },
+    select: { id: true, application: { select: { id: true } } },
+  });
+
+  if (!opportunity) {
+    throw new Error("Opportunity not found.");
+  }
+
+  // Application → Opportunity has onDelete: Restrict, so delete application first.
+  // Interview, OfferDetail, RejectionDetail cascade from Application.
+  // ActionItems are SetNull'd automatically.
+  if (opportunity.application) {
+    await prisma.application.delete({
+      where: { id: opportunity.application.id },
+    });
+  }
+
+  return prisma.opportunity.delete({ where: { id } });
 }

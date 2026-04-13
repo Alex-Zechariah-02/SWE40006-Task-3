@@ -111,7 +111,7 @@ export function OpportunityEditModal({
         return;
       }
 
-      toast.success("Opportunity updated.");
+      toast.success("Updated.");
       onOpenChange(false);
       router.refresh();
     } finally {
@@ -133,16 +133,20 @@ export function OpportunityEditModal({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4">
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="edit-title">Title</Label>
             <Input id="edit-title" name="title" required maxLength={200} defaultValue={opportunity.title} />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div className="grid gap-1.5">
-              <Label>Type</Label>
-              <Select name="opportunityType" defaultValue={opportunity.opportunityType}>
-                <SelectTrigger className="w-full">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-opportunityType">Type</Label>
+              <Select
+                name="opportunityType"
+                defaultValue={opportunity.opportunityType}
+                items={OPPORTUNITY_TYPES}
+              >
+                <SelectTrigger id="edit-opportunityType" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -152,10 +156,14 @@ export function OpportunityEditModal({
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-1.5">
-              <Label>Work mode</Label>
-              <Select name="remoteMode" defaultValue={opportunity.remoteMode}>
-                <SelectTrigger className="w-full">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-remoteMode">Work mode</Label>
+              <Select
+                name="remoteMode"
+                defaultValue={opportunity.remoteMode}
+                items={REMOTE_MODES}
+              >
+                <SelectTrigger id="edit-remoteMode" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -165,10 +173,10 @@ export function OpportunityEditModal({
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-1.5">
-              <Label>Stage</Label>
-              <Select name="stage" defaultValue={opportunity.stage}>
-                <SelectTrigger className="w-full">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-stage">Stage</Label>
+              <Select name="stage" defaultValue={opportunity.stage} items={STAGES}>
+                <SelectTrigger id="edit-stage" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -180,38 +188,38 @@ export function OpportunityEditModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid gap-2">
               <Label htmlFor="edit-location">Location</Label>
               <Input id="edit-location" name="location" maxLength={200} defaultValue={opportunity.location ?? ""} />
             </div>
-            <div className="grid gap-1.5">
+            <div className="grid gap-2">
               <Label htmlFor="edit-deadline">Deadline</Label>
               <Input id="edit-deadline" name="deadline" type="date" defaultValue={deadlineStr} />
             </div>
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="edit-url">Source URL</Label>
             <Input id="edit-url" name="sourceUrl" type="url" defaultValue={opportunity.sourceUrl ?? ""} />
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="edit-snippet">Snippet</Label>
             <Textarea id="edit-snippet" name="snippet" rows={2} maxLength={2000} defaultValue={opportunity.snippet ?? ""} />
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="edit-desc">Description</Label>
             <Textarea id="edit-desc" name="description" rows={3} maxLength={10000} defaultValue={opportunity.description ?? ""} />
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="edit-notes">Notes</Label>
             <Textarea id="edit-notes" name="notes" rows={2} maxLength={5000} defaultValue={opportunity.notes ?? ""} />
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label>Tags</Label>
             <TagInput value={tags} onChange={setTags} />
           </div>

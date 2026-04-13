@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { getSessionOrRedirect } from "@/lib/auth/session";
+import { getUserIdFromSessionOrNull } from "@/lib/auth/user";
 import { getOpportunity } from "@/lib/db/opportunities";
 import { OpportunityDetailSurface } from "@/features/opportunities/OpportunityDetailSurface";
-import { prisma } from "@/lib/prisma";
+import { PageContainer } from "@/components/shared/PageContainer";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -11,14 +12,10 @@ type PageProps = {
 export default async function Page({ params }: PageProps) {
   const { id } = await params;
   const session = await getSessionOrRedirect(`/app/opportunities/${id}`);
-  const user = await prisma.user.findUnique({
-    where: { email: session.user?.email ?? "" },
-    select: { id: true },
-  });
+  const userId = await getUserIdFromSessionOrNull(session);
+  if (!userId) return notFound();
 
-  if (!user) return notFound();
-
-  const opportunity = await getOpportunity(id, user.id);
+  const opportunity = await getOpportunity(id, userId);
   if (!opportunity) return notFound();
 
   const serialized = {
@@ -44,12 +41,19 @@ export default async function Page({ params }: PageProps) {
       : null,
     createdAt: opportunity.createdAt.toISOString(),
     company: opportunity.company,
-    application: opportunity.application,
+    application: opportunity.application
+      ? {
+          ...opportunity.application,
+          appliedDate: opportunity.application.appliedDate
+            ? opportunity.application.appliedDate.toISOString()
+            : null,
+        }
+      : null,
   };
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-6 py-10">
+    <PageContainer width="default">
       <OpportunityDetailSurface opportunity={serialized} />
-    </div>
+    </PageContainer>
   );
 }

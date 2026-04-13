@@ -32,6 +32,17 @@ export async function getCompany(id: string, userId: string) {
     where: { id, userId },
     include: {
       contacts: { orderBy: { createdAt: "desc" } },
+      applications: {
+        select: {
+          id: true,
+          currentStage: true,
+          priority: true,
+          appliedDate: true,
+          opportunity: { select: { id: true, title: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      },
       opportunities: {
         where: { archivedAt: null },
         select: { id: true, title: true, stage: true, opportunityType: true, createdAt: true },
@@ -146,4 +157,41 @@ export async function unarchiveCompany(id: string, userId: string) {
     where: { id, userId },
     data: { archivedAt: null },
   });
+}
+
+export class CompanyHasLinkedRecordsError extends Error {
+  opportunities: number;
+  applications: number;
+  contacts: number;
+
+  constructor(opportunities: number, applications: number, contacts: number) {
+    super(
+      `Cannot delete: ${opportunities} opportunities, ${applications} applications, and ${contacts} contacts linked to this company.`
+    );
+    this.name = "CompanyHasLinkedRecordsError";
+    this.opportunities = opportunities;
+    this.applications = applications;
+    this.contacts = contacts;
+  }
+}
+
+export async function deleteCompany(id: string, userId: string) {
+  const company = await prisma.company.findFirst({
+    where: { id, userId },
+    select: {
+      id: true,
+      _count: { select: { opportunities: true, applications: true, contacts: true } },
+    },
+  });
+
+  if (!company) {
+    throw new Error("Company not found.");
+  }
+
+  const { opportunities, applications, contacts } = company._count;
+  if (opportunities > 0 || applications > 0 || contacts > 0) {
+    throw new CompanyHasLinkedRecordsError(opportunities, applications, contacts);
+  }
+
+  return prisma.company.delete({ where: { id } });
 }

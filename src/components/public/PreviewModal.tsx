@@ -1,6 +1,7 @@
 "use client";
 
 import { ExternalLink } from "lucide-react";
+import { LabelValue } from "@/components/shared/LabelValue";
 import {
   Dialog,
   DialogContent,
@@ -26,13 +27,13 @@ export function PreviewModal({
 }: PreviewModalProps) {
   const metaRows = result
     ? [
-        { label: "COMPANY", value: result.companyName },
-        { label: "LOCATION", value: result.location },
+        { label: "Company", value: result.companyName },
+        { label: "Location", value: result.location },
         ...(result.remoteMode
-          ? [{ label: "REMOTE", value: result.remoteMode.toUpperCase() }]
+          ? [{ label: "Remote", value: result.remoteMode.toUpperCase() }]
           : []),
         ...(result.opportunityType
-          ? [{ label: "TYPE", value: result.opportunityType.toUpperCase() }]
+          ? [{ label: "Type", value: result.opportunityType.toUpperCase() }]
           : []),
       ]
     : [];
@@ -43,23 +44,18 @@ export function PreviewModal({
         {result && (
           <>
             <DialogHeader>
-              <div className="type-mono-label text-muted-foreground mb-1">
-                SOURCE // {result.sourceProvider.toUpperCase()}
+              <div className="mb-1">
+                <LabelValue label="Source" value={result.sourceProvider.toUpperCase()} />
               </div>
               <DialogTitle className="type-h2 font-display leading-snug text-balance">
                 {result.title}
               </DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {metaRows.map(({ label, value }) => (
-                <div
-                  key={label}
-                  className="type-mono-label text-muted-foreground break-words"
-                >
-                  {label}
-                  {" // "}
-                  {value}
+                <div key={label}>
+                  <LabelValue label={label} value={value} />
                 </div>
               ))}
             </div>
@@ -75,7 +71,7 @@ export function PreviewModal({
                 href={result.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex w-full min-w-0 items-center gap-1.5 type-small text-muted-foreground transition-colors hover:text-foreground"
+                className="flex w-full min-w-0 items-center gap-2 type-small text-muted-foreground transition-colors hover:text-foreground"
               >
                 <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
                 <span className="min-w-0 truncate">{result.sourceUrl}</span>

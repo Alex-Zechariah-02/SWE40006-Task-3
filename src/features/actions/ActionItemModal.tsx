@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { FormMessage } from "@/components/ui/form-message";
 import {
   Select,
   SelectContent,
@@ -23,46 +24,10 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
-
-const STATUSES = [
-  { value: "Open", label: "Open" },
-  { value: "InProgress", label: "In Progress" },
-  { value: "Completed", label: "Completed" },
-  { value: "Cancelled", label: "Cancelled" },
-];
-
-const PRIORITIES = [
-  { value: "Low", label: "Low" },
-  { value: "Medium", label: "Medium" },
-  { value: "High", label: "High" },
-];
-
-interface EntityOption {
-  id: string;
-  label: string;
-}
-
-interface ActionItemModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  mode: "create" | "edit";
-  existingItem?: {
-    id: string;
-    title: string;
-    description: string | null;
-    dueAt: string | null;
-    priority: string;
-    status: string;
-  };
-  companies?: EntityOption[];
-  opportunities?: EntityOption[];
-  applications?: EntityOption[];
-  interviews?: EntityOption[];
-  prelinkedOpportunityId?: string;
-  prelinkedApplicationId?: string;
-  prelinkedInterviewId?: string;
-  prelinkedCompanyId?: string;
-}
+import type { ActionItemModalProps } from "./modal/types";
+import { PRIORITIES, STATUSES } from "./modal/constants";
+import { ActionItemLinkFields } from "./modal/ActionItemLinkFields";
+import { readActionItemModalError } from "./modal/readError";
 
 export function ActionItemModal({
   open,
@@ -94,23 +59,20 @@ export function ActionItemModal({
 
     const form = new FormData(e.currentTarget);
 
+    function readOptionalLinkId(fieldName: string, prelinkedId?: string) {
+      const value = form.get(fieldName);
+      if (value === null) return prelinkedId || undefined;
+      if (typeof value !== "string") return prelinkedId || undefined;
+      if (value === "") return undefined;
+      return value;
+    }
+
     async function readError(res: Response, fallback: string) {
-      try {
-        const data = await res.clone().json();
-        if (data?.error?.fields) setErrors(data.error.fields);
-        if (typeof data?.error?.message === "string") return data.error.message;
-      } catch {
-        // ignore
-      }
-
-      try {
-        const text = await res.text();
-        if (text) return text.slice(0, 200);
-      } catch {
-        // ignore
-      }
-
-      return fallback;
+      return readActionItemModalError({
+        res,
+        fallback,
+        onFields: (fields) => setErrors(fields),
+      });
     }
 
     try {
@@ -121,14 +83,16 @@ export function ActionItemModal({
           dueAt: form.get("dueAt") || undefined,
           priority: form.get("priority"),
           status: form.get("status"),
-          companyId:
-            form.get("companyId") || prelinkedCompanyId || undefined,
-          opportunityId:
-            form.get("opportunityId") || prelinkedOpportunityId || undefined,
-          applicationId:
-            form.get("applicationId") || prelinkedApplicationId || undefined,
-          interviewId:
-            form.get("interviewId") || prelinkedInterviewId || undefined,
+          companyId: readOptionalLinkId("companyId", prelinkedCompanyId),
+          opportunityId: readOptionalLinkId(
+            "opportunityId",
+            prelinkedOpportunityId
+          ),
+          applicationId: readOptionalLinkId(
+            "applicationId",
+            prelinkedApplicationId
+          ),
+          interviewId: readOptionalLinkId("interviewId", prelinkedInterviewId),
         };
 
         const res = await fetch("/api/actions", {
@@ -138,11 +102,11 @@ export function ActionItemModal({
         });
 
         if (!res.ok) {
-          toast.error(await readError(res, "Failed to create action item."));
+          toast.error(await readError(res, "Failed to create."));
           return;
         }
 
-        toast.success("Action item created.");
+        toast.success("Created.");
       } else if (mode === "edit" && existingItem) {
         const body: Record<string, unknown> = {
           title: form.get("title"),
@@ -159,11 +123,11 @@ export function ActionItemModal({
         });
 
         if (!res.ok) {
-          toast.error(await readError(res, "Failed to update action item."));
+          toast.error(await readError(res, "Failed to update."));
           return;
         }
 
-        toast.success("Action item updated.");
+        toast.success("Updated.");
       }
 
       onOpenChange(false);
@@ -187,58 +151,54 @@ export function ActionItemModal({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4">
-          <div className="grid gap-1.5">
-            <Label htmlFor="ai-title">Title</Label>
+          <div className="grid gap-2">
+            <Label htmlFor="ai-title" required>Title</Label>
             <Input
               id="ai-title"
               name="title"
               required
+              aria-describedby="ai-title-error"
               maxLength={200}
               defaultValue={existingItem?.title ?? ""}
               placeholder="e.g. Follow up on application status"
             />
-            {errors.title && (
-              <p className="type-small text-destructive">{errors.title[0]}</p>
-            )}
+            <FormMessage id="ai-title-error" error>{errors.title?.[0]}</FormMessage>
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="ai-desc">Description</Label>
             <Textarea
               id="ai-desc"
               name="description"
               rows={3}
+              aria-describedby="ai-desc-error"
               maxLength={5000}
               defaultValue={existingItem?.description ?? ""}
               placeholder="Optional details about this action item..."
             />
-            {errors.description && (
-              <p className="type-small text-destructive">
-                {errors.description[0]}
-              </p>
-            )}
+            <FormMessage id="ai-desc-error" error>{errors.description?.[0]}</FormMessage>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div className="grid gap-1.5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="grid gap-2">
               <Label htmlFor="ai-due">Due date</Label>
               <Input
                 id="ai-due"
                 name="dueAt"
                 type="date"
+                aria-describedby="ai-due-error"
                 defaultValue={dueDateStr}
               />
-              {errors.dueAt && (
-                <p className="type-small text-destructive">{errors.dueAt[0]}</p>
-              )}
+              <FormMessage id="ai-due-error" error>{errors.dueAt?.[0]}</FormMessage>
             </div>
-            <div className="grid gap-1.5">
-              <Label>Priority</Label>
+            <div className="grid gap-2">
+              <Label htmlFor="ai-priority">Priority</Label>
               <Select
                 name="priority"
                 defaultValue={existingItem?.priority ?? "Medium"}
+                items={PRIORITIES}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger id="ai-priority" className="w-full" aria-describedby="ai-priority-error">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -249,19 +209,16 @@ export function ActionItemModal({
                   ))}
                 </SelectContent>
               </Select>
-              {errors.priority && (
-                <p className="type-small text-destructive">
-                  {errors.priority[0]}
-                </p>
-              )}
+              <FormMessage id="ai-priority-error" error>{errors.priority?.[0]}</FormMessage>
             </div>
-            <div className="grid gap-1.5">
-              <Label>Status</Label>
+            <div className="grid gap-2">
+              <Label htmlFor="ai-status">Status</Label>
               <Select
                 name="status"
                 defaultValue={existingItem?.status ?? "Open"}
+                items={STATUSES}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger id="ai-status" className="w-full" aria-describedby="ai-status-error">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -272,100 +229,20 @@ export function ActionItemModal({
                   ))}
                 </SelectContent>
               </Select>
-              {errors.status && (
-                <p className="type-small text-destructive">{errors.status[0]}</p>
-              )}
+              <FormMessage id="ai-status-error" error>{errors.status?.[0]}</FormMessage>
             </div>
           </div>
 
-          {/* Optional entity linkages */}
-          {(companies.length > 0 || prelinkedCompanyId) && (
-            <div className="grid gap-1.5">
-              <Label>Company</Label>
-              <Select
-                name="companyId"
-                defaultValue={prelinkedCompanyId ?? ""}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Link a company (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">None</SelectItem>
-                  {companies.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {(opportunities.length > 0 || prelinkedOpportunityId) && (
-            <div className="grid gap-1.5">
-              <Label>Opportunity</Label>
-              <Select
-                name="opportunityId"
-                defaultValue={prelinkedOpportunityId ?? ""}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Link an opportunity (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">None</SelectItem>
-                  {opportunities.map((o) => (
-                    <SelectItem key={o.id} value={o.id}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {(applications.length > 0 || prelinkedApplicationId) && (
-            <div className="grid gap-1.5">
-              <Label>Application</Label>
-              <Select
-                name="applicationId"
-                defaultValue={prelinkedApplicationId ?? ""}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Link an application (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">None</SelectItem>
-                  {applications.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {(interviews.length > 0 || prelinkedInterviewId) && (
-            <div className="grid gap-1.5">
-              <Label>Interview</Label>
-              <Select
-                name="interviewId"
-                defaultValue={prelinkedInterviewId ?? ""}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Link an interview (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">None</SelectItem>
-                  {interviews.map((i) => (
-                    <SelectItem key={i.id} value={i.id}>
-                      {i.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <ActionItemLinkFields
+            companies={companies}
+            opportunities={opportunities}
+            applications={applications}
+            interviews={interviews}
+            prelinkedCompanyId={prelinkedCompanyId}
+            prelinkedOpportunityId={prelinkedOpportunityId}
+            prelinkedApplicationId={prelinkedApplicationId}
+            prelinkedInterviewId={prelinkedInterviewId}
+          />
 
           <DialogFooter>
             <DialogClose

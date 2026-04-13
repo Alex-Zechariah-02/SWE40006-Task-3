@@ -1,55 +1,29 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "../../../../auth";
-import { prisma } from "@/lib/prisma";
+import { requireUserOrResponse } from "@/lib/api/auth";
+import { jsonError } from "@/lib/api/errors";
+import { readJsonOrResponse } from "@/lib/api/json";
+import { validateOrResponse } from "@/lib/api/validation";
 import { actionItemCreateSchema } from "@/lib/validation/action";
 import { createActionItem } from "@/lib/db/actions";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const session = await auth();
-  const email = session?.user?.email;
-  if (!email) {
-    return NextResponse.json(
-      { error: { message: "You must be signed in." } },
-      { status: 401 }
-    );
-  }
+  const authed = await requireUserOrResponse();
+  if (!authed.ok) return authed.response;
 
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    return NextResponse.json(
-      { error: { message: "Account not found." } },
-      { status: 401 }
-    );
-  }
+  const body = await readJsonOrResponse(req);
+  if (!body.ok) return body.response;
 
-  let json: unknown;
-  try {
-    json = await req.json();
-  } catch {
-    return NextResponse.json(
-      { error: { message: "Invalid request body." } },
-      { status: 400 }
-    );
-  }
-
-  const parsed = actionItemCreateSchema.safeParse(json);
-  if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: {
-          message: "Validation failed.",
-          fields: parsed.error.flatten().fieldErrors,
-        },
-      },
-      { status: 400 }
-    );
-  }
+  const parsed = validateOrResponse(actionItemCreateSchema, body.json, {
+    message: "Validation failed.",
+    includeFieldErrors: true,
+  });
+  if (!parsed.ok) return parsed.response;
 
   try {
-    const actionItem = await createActionItem(user.id, {
+    const actionItem = await createActionItem(authed.user.id, {
       title: parsed.data.title,
       description: parsed.data.description,
       dueAt: parsed.data.dueAt || undefined,
@@ -63,6 +37,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ actionItem }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to create action item.";
-    return NextResponse.json({ error: { message } }, { status: 500 });
+    return jsonError(message, 500);
   }
 }

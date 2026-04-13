@@ -80,8 +80,8 @@ export function ApplicationConvertModal({
       const data = await res.json().catch(() => ({}));
 
       if (res.status === 409 && data.existingApplicationId) {
-        toast.message("Already converted.", {
-          description: "Opening the existing application.",
+        toast.info("Already converted.", {
+          description: "Opening existing application.",
         });
         onOpenChange(false);
         router.push(`/app/applications/${data.existingApplicationId}`);
@@ -93,7 +93,7 @@ export function ApplicationConvertModal({
         return;
       }
 
-      toast.success("Opportunity converted to application.");
+      toast.success("Converted.");
       onOpenChange(false);
       const newId = data.application?.id as string | undefined;
       if (newId) {
@@ -117,10 +117,10 @@ export function ApplicationConvertModal({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4">
-          <div className="grid gap-1.5">
-            <Label>Priority</Label>
-            <Select name="priority" defaultValue="Medium">
-              <SelectTrigger className="w-full">
+          <div className="grid gap-2">
+            <Label htmlFor="convert-priority">Priority</Label>
+            <Select name="priority" defaultValue="Medium" items={PRIORITIES}>
+              <SelectTrigger id="convert-priority" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -133,7 +133,7 @@ export function ApplicationConvertModal({
             </Select>
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="convert-appliedDate">Date Applied</Label>
             <Input
               id="convert-appliedDate"
@@ -142,7 +142,7 @@ export function ApplicationConvertModal({
             />
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="convert-statusNotes">Status Notes</Label>
             <Textarea
               id="convert-statusNotes"
@@ -153,7 +153,7 @@ export function ApplicationConvertModal({
             />
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label>Tags</Label>
             <TagInput value={tags} onChange={setTags} />
           </div>

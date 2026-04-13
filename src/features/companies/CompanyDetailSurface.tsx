@@ -2,49 +2,18 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { ArchiveButton } from "@/components/app/ArchiveButton";
-import { LabelValue } from "@/components/shared/LabelValue";
-import { Save, ExternalLink } from "lucide-react";
-
-interface CompanyDetailData {
-  id: string;
-  name: string;
-  website: string | null;
-  location: string | null;
-  industry: string | null;
-  techStackNotes: string | null;
-  applicationProcessNotes: string | null;
-  interviewNotes: string | null;
-  compensationNotes: string | null;
-  generalNotes: string | null;
-  archivedAt: string | null;
-  contacts: Array<{
-    id: string;
-    name: string;
-    title: string | null;
-    email: string | null;
-  }>;
-  opportunities: Array<{
-    id: string;
-    title: string;
-    stage: string;
-    opportunityType: string;
-  }>;
-  _count: { applications: number };
-}
-
-const NOTE_FIELDS = [
-  { key: "techStackNotes", label: "Tech Stack" },
-  { key: "applicationProcessNotes", label: "Application Process" },
-  { key: "interviewNotes", label: "Interview" },
-  { key: "compensationNotes", label: "Compensation" },
-  { key: "generalNotes", label: "General" },
-] as const;
+import {
+  NOTE_FIELDS,
+  type CompanyDetailData,
+  type CompanyNoteFieldKey,
+} from "./detail/companyDetailTypes";
+import { CompanyDetailHeader } from "./detail/CompanyDetailHeader";
+import { CompanyResearchNotesCard } from "./detail/CompanyResearchNotesCard";
+import { CompanyLinkedOpportunitiesCard } from "./detail/CompanyLinkedOpportunitiesCard";
+import { CompanyApplicationsCard } from "./detail/CompanyApplicationsCard";
+import { CompanyDetailsCard } from "./detail/CompanyDetailsCard";
+import { CompanyContactsCard } from "./detail/CompanyContactsCard";
 
 export function CompanyDetailSurface({
   company,
@@ -52,18 +21,24 @@ export function CompanyDetailSurface({
   company: CompanyDetailData;
 }) {
   const router = useRouter();
-  const [notes, setNotes] = React.useState<Record<string, string>>(() => {
-    const init: Record<string, string> = {};
-    for (const f of NOTE_FIELDS) {
-      init[f.key] = (company[f.key] as string) ?? "";
+  const [notes, setNotes] = React.useState<Record<CompanyNoteFieldKey, string>>(
+    () => {
+      const init = {} as Record<CompanyNoteFieldKey, string>;
+      for (const f of NOTE_FIELDS) {
+        init[f.key] = company[f.key] ?? "";
+      }
+      return init;
     }
-    return init;
-  });
+  );
   const [saving, setSaving] = React.useState(false);
 
   const dirty = NOTE_FIELDS.some(
-    (f) => notes[f.key] !== ((company[f.key] as string) ?? "")
+    (f) => notes[f.key] !== (company[f.key] ?? "")
   );
+
+  function handleNoteChange(key: CompanyNoteFieldKey, value: string) {
+    setNotes((prev) => ({ ...prev, [key]: value }));
+  }
 
   async function saveNotes() {
     setSaving(true);
@@ -106,137 +81,67 @@ export function CompanyDetailSurface({
     router.refresh();
   }
 
+  async function handleDelete() {
+    const res = await fetch(`/api/companies/${company.id}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      toast.error(
+        data.error?.message ||
+          "Failed to delete company."
+      );
+      return;
+    }
+    toast.success("Company deleted.");
+    router.replace("/app/companies");
+  }
+
   return (
     <>
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 pb-6">
-        <div>
-          <h1 className="type-h1 font-semibold">{company.name}</h1>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-            {company.industry && (
-              <LabelValue label="INDUSTRY" value={company.industry} />
-            )}
-            {company.location && (
-              <LabelValue label="LOC" value={company.location} />
-            )}
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <ArchiveButton
-            isArchived={!!company.archivedAt}
-            entityLabel="Company"
-            onConfirm={handleArchive}
+      <CompanyDetailHeader
+        companyName={company.name}
+        archivedAt={company.archivedAt}
+        website={company.website}
+        onArchive={handleArchive}
+        onDelete={handleDelete}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main content (2/3) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Notes editor */}
+          <CompanyResearchNotesCard
+            notes={notes}
+            dirty={dirty}
+            saving={saving}
+            onSave={saveNotes}
+            onChangeNote={handleNoteChange}
+          />
+
+          {/* Linked opportunities */}
+          <CompanyLinkedOpportunitiesCard opportunities={company.opportunities} />
+
+          <CompanyApplicationsCard
+            applications={company.applications}
+            applicationCount={company._count.applications}
           />
         </div>
-      </div>
 
-      {/* Badges */}
-      <div className="flex flex-wrap gap-2 pb-6">
-        {company.website && (
-          <a
-            href={company.website}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 type-small text-primary hover:underline"
-          >
-            {new URL(company.website).hostname}
-            <ExternalLink className="size-3" />
-          </a>
-        )}
-        {company.archivedAt && (
-          <Badge variant="destructive">Archived</Badge>
-        )}
-      </div>
+        {/* Sidebar (1/3) */}
+        <div className="space-y-6">
+          {/* Company metadata */}
+          <CompanyDetailsCard
+            industry={company.industry}
+            location={company.location}
+            website={company.website}
+            applicationCount={company._count.applications}
+          />
 
-      {/* Notes editor */}
-      <div className="pb-8">
-        <div className="flex items-center justify-between pb-4">
-          <h2 className="type-h2 font-semibold">Research Notes</h2>
-          {dirty && (
-            <Button size="sm" onClick={saveNotes} disabled={saving}>
-              <Save className="mr-1.5 size-4" />
-              {saving ? "Saving..." : "Save Notes"}
-            </Button>
-          )}
-        </div>
-        <div className="grid gap-4">
-          {NOTE_FIELDS.map((f) => (
-            <div key={f.key} className="grid gap-1.5">
-              <label className="type-mono-label text-muted-foreground">
-                {f.label.toUpperCase()}
-              </label>
-              <Textarea
-                rows={3}
-                value={notes[f.key]}
-                onChange={(e) =>
-                  setNotes((prev) => ({ ...prev, [f.key]: e.target.value }))
-                }
-                placeholder={`${f.label} notes...`}
-                maxLength={5000}
-              />
-            </div>
-          ))}
+          {/* Contacts */}
+          <CompanyContactsCard contacts={company.contacts} />
         </div>
       </div>
-
-      {/* Linked opportunities */}
-      {company.opportunities.length > 0 && (
-        <div className="pb-8">
-          <h2 className="type-h2 font-semibold pb-3">
-            Opportunities ({company.opportunities.length})
-          </h2>
-          <div className="divide-y divide-border rounded-xl border border-border">
-            {company.opportunities.map((opp) => (
-              <div
-                key={opp.id}
-                className="flex items-center justify-between gap-4 px-4 py-2.5"
-              >
-                <Link
-                  href={`/app/opportunities/${opp.id}`}
-                  className="type-body text-foreground hover:text-primary transition-colors truncate"
-                >
-                  {opp.title}
-                </Link>
-                <div className="flex shrink-0 gap-1.5">
-                  <Badge variant="secondary">{opp.stage}</Badge>
-                  <Badge variant="outline">{opp.opportunityType}</Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Contacts */}
-      {company.contacts.length > 0 && (
-        <div className="pb-8">
-          <h2 className="type-h2 font-semibold pb-3">
-            Contacts ({company.contacts.length})
-          </h2>
-          <div className="divide-y divide-border rounded-xl border border-border">
-            {company.contacts.map((c) => (
-              <div
-                key={c.id}
-                className="flex items-center justify-between gap-4 px-4 py-2.5"
-              >
-                <div className="min-w-0">
-                  <p className="type-body font-medium">{c.name}</p>
-                  {c.title && (
-                    <p className="type-small text-muted-foreground">
-                      {c.title}
-                    </p>
-                  )}
-                </div>
-                {c.email && (
-                  <span className="type-small text-muted-foreground truncate">
-                    {c.email}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </>
   );
 }

@@ -76,7 +76,9 @@ test("applications: contact link/unlink and offer/rejection guardrails", async (
   const appId = converted.applicationId;
 
   await page.goto(`/app/applications/${encodeURIComponent(appId)}`);
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: `E2E App Opp ${stamp}` })
+  ).toBeVisible();
 
   // Link contact
   const linkButton = page.getByRole("button", { name: "Link Contact" });
@@ -89,12 +91,36 @@ test("applications: contact link/unlink and offer/rejection guardrails", async (
   await page
     .locator('[data-slot="select-item"]', { hasText: contactName })
     .click();
+
+  const linkResPromise = page.waitForResponse((res) => {
+    return (
+      res
+        .url()
+        .includes(`/api/applications/${encodeURIComponent(appId)}/contacts`) &&
+      res.request().method() === "POST"
+    );
+  });
   await linkDialog.getByRole("button", { name: "Link contact" }).click();
+  const linkRes = await linkResPromise;
+  expect(linkRes.ok()).toBeTruthy();
   await expect(linkDialog).toBeHidden();
+
+  await page.reload();
   await expect(page.getByText(contactName)).toBeVisible();
 
   // Unlink contact
+  const unlinkResPromise = page.waitForResponse((res) => {
+    return (
+      res
+        .url()
+        .includes(`/api/applications/${encodeURIComponent(appId)}/contacts`) &&
+      res.request().method() === "DELETE" &&
+      res.ok()
+    );
+  });
   await page.getByRole("button", { name: "Unlink contact" }).click();
+  await unlinkResPromise;
+  await page.reload();
   await expect(page.getByText("No contacts linked.")).toBeVisible();
 
   // Offer guardrail: add offer detail then block stage change away from Offer.
@@ -104,17 +130,48 @@ test("applications: contact link/unlink and offer/rejection guardrails", async (
   const editTriggers = editDialog.locator('[data-slot="select-trigger"]');
   await editTriggers.nth(0).click();
   await page.locator('[data-slot="select-item"]', { hasText: "Offer" }).click();
+
+  const stageOfferResPromise = page.waitForResponse((res) => {
+    return (
+      res.url().includes(`/api/applications/${encodeURIComponent(appId)}`) &&
+      res.request().method() === "PATCH" &&
+      res.ok()
+    );
+  });
   await editDialog.getByRole("button", { name: "Save Changes" }).click();
+  await stageOfferResPromise;
   await expect(editDialog).toBeHidden();
 
-  await expect(page.getByText("OFFER DETAIL", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.reload();
+  await expect(
+    page.locator('[data-slot="badge"]', { hasText: "Offer" }).first()
+  ).toBeVisible();
+
+  const offerCard = page
+    .locator('[data-slot="card"]')
+    .filter({ has: page.getByText("Offer Detail", { exact: true }) })
+    .first();
+  await expect(offerCard).toBeVisible();
+  await offerCard.getByRole("button", { name: "Add" }).click();
 
   const offerDialog = page.getByRole("dialog", { name: "Add Offer Detail" });
   await expect(offerDialog).toBeVisible();
   await offerDialog.getByLabel("Decision status").fill("Pending");
+
+  const offerCreateResPromise = page.waitForResponse((res) => {
+    return (
+      res
+        .url()
+        .includes(`/api/applications/${encodeURIComponent(appId)}/offer`) &&
+      res.request().method() === "POST" &&
+      res.status() === 201
+    );
+  });
   await offerDialog.getByRole("button", { name: "Save" }).click();
+  await offerCreateResPromise;
   await expect(offerDialog).toBeHidden();
+
+  await page.reload();
 
   await page.getByRole("button", { name: "Edit" }).first().click();
   await expect(editDialog).toBeVisible();
@@ -142,8 +199,18 @@ test("applications: contact link/unlink and offer/rejection guardrails", async (
   await expect(editDialog).toBeVisible();
   await editTriggers.nth(0).click();
   await page.locator('[data-slot="select-item"]', { hasText: "Applied" }).click();
+
+  const stageAppliedResPromise = page.waitForResponse((res) => {
+    return (
+      res.url().includes(`/api/applications/${encodeURIComponent(appId)}`) &&
+      res.request().method() === "PATCH" &&
+      res.ok()
+    );
+  });
   await editDialog.getByRole("button", { name: "Save Changes" }).click();
+  await stageAppliedResPromise;
   await expect(editDialog).toBeHidden();
+  await page.reload();
   await expect(page.locator('[data-slot="badge"]', { hasText: "Applied" }).first()).toBeVisible();
 
   // Rejection guardrail: add rejection detail then block stage change away from Rejected.
@@ -151,16 +218,44 @@ test("applications: contact link/unlink and offer/rejection guardrails", async (
   await expect(editDialog).toBeVisible();
   await editTriggers.nth(0).click();
   await page.locator('[data-slot="select-item"]', { hasText: "Rejected" }).click();
+
+  const stageRejectedResPromise = page.waitForResponse((res) => {
+    return (
+      res.url().includes(`/api/applications/${encodeURIComponent(appId)}`) &&
+      res.request().method() === "PATCH" &&
+      res.ok()
+    );
+  });
   await editDialog.getByRole("button", { name: "Save Changes" }).click();
+  await stageRejectedResPromise;
   await expect(editDialog).toBeHidden();
 
-  await expect(page.getByText("REJECTION DETAIL", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await page.reload();
+
+  const rejectionCard = page
+    .locator('[data-slot="card"]')
+    .filter({ has: page.getByText("Rejection Detail", { exact: true }) })
+    .first();
+  await expect(rejectionCard).toBeVisible();
+  await rejectionCard.getByRole("button", { name: "Add" }).click();
   const rejectionDialog = page.getByRole("dialog", { name: "Add Rejection Detail" });
   await expect(rejectionDialog).toBeVisible();
   await rejectionDialog.getByLabel("Rejected at stage").fill("Interview");
+
+  const rejectionCreateResPromise = page.waitForResponse((res) => {
+    return (
+      res
+        .url()
+        .includes(`/api/applications/${encodeURIComponent(appId)}/rejection`) &&
+      res.request().method() === "POST" &&
+      res.status() === 201
+    );
+  });
   await rejectionDialog.getByRole("button", { name: "Save" }).click();
+  await rejectionCreateResPromise;
   await expect(rejectionDialog).toBeHidden();
+
+  await page.reload();
 
   await page.getByRole("button", { name: "Edit" }).first().click();
   await expect(editDialog).toBeVisible();

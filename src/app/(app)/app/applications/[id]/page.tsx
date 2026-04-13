@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 import { getSessionOrRedirect } from "@/lib/auth/session";
+import { getUserIdFromSessionOrNull } from "@/lib/auth/user";
 import { getApplication } from "@/lib/db/applications";
 import { listContacts } from "@/lib/db/contacts";
 import { ApplicationDetailSurface } from "@/features/applications/ApplicationDetailSurface";
-import { prisma } from "@/lib/prisma";
+import { PageContainer } from "@/components/shared/PageContainer";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -12,17 +13,13 @@ type PageProps = {
 export default async function Page({ params }: PageProps) {
   const { id } = await params;
   const session = await getSessionOrRedirect(`/app/applications/${id}`);
-  const user = await prisma.user.findUnique({
-    where: { email: session.user?.email ?? "" },
-    select: { id: true },
-  });
+  const userId = await getUserIdFromSessionOrNull(session);
+  if (!userId) return notFound();
 
-  if (!user) return notFound();
-
-  const application = await getApplication(id, user.id);
+  const application = await getApplication(id, userId);
   if (!application) return notFound();
 
-  const companyContacts = await listContacts(user.id, {
+  const companyContacts = await listContacts(userId, {
     companyId: application.company.id,
   });
 
@@ -92,8 +89,8 @@ export default async function Page({ params }: PageProps) {
   };
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-6 py-10">
+    <PageContainer width="default">
       <ApplicationDetailSurface application={serialized} />
-    </div>
+    </PageContainer>
   );
 }

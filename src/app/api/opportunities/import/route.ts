@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { auth } from "../../../../../auth";
-import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
-import { canonicalizeUrl, computeDedupeKey } from "@/lib/search/dedupe";
-import { normalizeCompanyName } from "@/lib/db/normalize";
+import { requireUserOrResponse } from "@/lib/api/auth";
+import { jsonError } from "@/lib/api/errors";
+import { readJsonOrResponse } from "@/lib/api/json";
+import { validateOrResponse } from "@/lib/api/validation";
+import {
+  importOpportunityFromProvider,
+  OpportunityImportFailedError,
+} from "@/lib/db/opportunities.import";
 
 export const runtime = "nodejs";
 
@@ -23,144 +26,28 @@ const payloadSchema = z.object({
   rawProviderPayload: z.unknown().optional(),
 });
 
-function mapRemoteMode(value: string | undefined) {
-  const v = (value ?? "").trim().toLowerCase();
-  if (v.includes("remote")) return "Remote" as const;
-  if (v.includes("hybrid")) return "Hybrid" as const;
-  if (v.includes("on-site") || v.includes("onsite") || v.includes("on site")) {
-    return "OnSite" as const;
-  }
-  return "OnSite" as const;
-}
-
-function mapOpportunityType(value: string | undefined) {
-  const v = (value ?? "").trim().toLowerCase();
-  if (v.includes("intern")) return "Internship" as const;
-  if (v.includes("graduate")) return "GraduateProgram" as const;
-  if (v.includes("part")) return "PartTime" as const;
-  if (v.includes("contract")) return "Contract" as const;
-  return "FullTime" as const;
-}
-
 export async function POST(req: Request) {
-  const session = await auth();
-  const email = session?.user?.email;
-  if (!email) {
-    return NextResponse.json(
-      { error: { message: "You must be signed in to import an opportunity." } },
-      { status: 401 }
-    );
-  }
-
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    return NextResponse.json(
-      { error: { message: "Account not found." } },
-      { status: 401 }
-    );
-  }
-
-  let json: unknown;
-  try {
-    json = await req.json();
-  } catch {
-    return NextResponse.json(
-      { error: { message: "Invalid request body." } },
-      { status: 400 }
-    );
-  }
-
-  const parsed = payloadSchema.safeParse(json);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: { message: "The saved opportunity is invalid. Try saving it again." } },
-      { status: 400 }
-    );
-  }
-
-  const canonicalUrl = canonicalizeUrl(parsed.data.sourceUrl);
-  const dedupeKey = computeDedupeKey({
-    provider: parsed.data.sourceProvider,
-    canonicalUrl,
+  const authed = await requireUserOrResponse({
+    signedInMessage: "You must be signed in to import an opportunity.",
   });
+  if (!authed.ok) return authed.response;
 
-  const existing = await prisma.opportunity.findUnique({
-    where: { userId_dedupeKey: { userId: user.id, dedupeKey } },
-    select: { id: true },
+  const body = await readJsonOrResponse(req);
+  if (!body.ok) return body.response;
+
+  const parsed = validateOrResponse(payloadSchema, body.json, {
+    message: "The saved opportunity is invalid. Try saving it again.",
+    includeFieldErrors: false,
   });
-
-  if (existing) {
-    return NextResponse.json({ opportunityId: existing.id, created: false });
-  }
-
-  const companyParts = normalizeCompanyName(parsed.data.companyName);
-
-  const company = await prisma.company.upsert({
-    where: {
-      userId_normalizedName: {
-        userId: user.id,
-        normalizedName: companyParts.normalizedName,
-      },
-    },
-    update: {
-      name: companyParts.name,
-    },
-    create: {
-      userId: user.id,
-      name: companyParts.name,
-      normalizedName: companyParts.normalizedName,
-    },
-    select: { id: true },
-  });
-
-  const rawProviderPayload =
-    parsed.data.rawProviderPayload === undefined
-      ? undefined
-      : parsed.data.rawProviderPayload === null
-        ? Prisma.JsonNull
-        : (parsed.data.rawProviderPayload as Prisma.InputJsonValue);
+  if (!parsed.ok) return parsed.response;
 
   try {
-    const created = await prisma.opportunity.create({
-      data: {
-        userId: user.id,
-        companyId: company.id,
-        title: parsed.data.title,
-        opportunityType: mapOpportunityType(parsed.data.opportunityType),
-        location: parsed.data.location,
-        remoteMode: mapRemoteMode(parsed.data.remoteMode),
-        sourceType: "Imported",
-        sourceUrl: canonicalUrl,
-        sourceProvider: parsed.data.sourceProvider,
-        externalSourceId: null,
-        snippet: parsed.data.snippet ?? null,
-        description: null,
-        stage: "Saved",
-        deadline: null,
-        tags: [],
-        notes: null,
-        dedupeKey,
-        rawProviderPayload,
-        importedAt: new Date(),
-        archivedAt: null,
-      },
-      select: { id: true },
-    });
-
-    return NextResponse.json({ opportunityId: created.id, created: true });
-  } catch {
-    const fallback = await prisma.opportunity.findUnique({
-      where: { userId_dedupeKey: { userId: user.id, dedupeKey } },
-      select: { id: true },
-    });
-
-    if (fallback) {
-      return NextResponse.json({ opportunityId: fallback.id, created: false });
+    const result = await importOpportunityFromProvider(authed.user.id, parsed.data);
+    return NextResponse.json(result);
+  } catch (error) {
+    if (!(error instanceof OpportunityImportFailedError)) {
+      throw error;
     }
-
-    return NextResponse.json(
-      { error: { message: "Import failed. Please try again." } },
-      { status: 500 }
-    );
+    return jsonError("Import failed. Please try again.", 500);
   }
 }

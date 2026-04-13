@@ -3,6 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { PriorityBadge } from "@/components/ui/priority-badge";
+import { StageBadge } from "@/components/ui/stage-badge";
 import { Calendar } from "lucide-react";
 
 interface ApplicationCardProps {
@@ -17,21 +19,6 @@ interface ApplicationCardProps {
   archivedAt: string | null;
 }
 
-const STAGE_LABELS: Record<string, string> = {
-  Applied: "Applied",
-  Assessment: "Assessment",
-  Interview: "Interview",
-  Offer: "Offer",
-  Rejected: "Rejected",
-  Withdrawn: "Withdrawn",
-};
-
-const PRIORITY_LABELS: Record<string, string> = {
-  Low: "Low",
-  Medium: "Medium",
-  High: "High",
-};
-
 export function ApplicationCard({
   id,
   opportunityTitle,
@@ -44,7 +31,7 @@ export function ApplicationCard({
   archivedAt,
 }: ApplicationCardProps) {
   return (
-    <div className="group rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/40">
+    <div className="group rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/40 hover-lift">
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <Link
@@ -53,21 +40,9 @@ export function ApplicationCard({
         >
           {opportunityTitle}
         </Link>
-        <div className="flex shrink-0 items-center gap-1.5">
-          <Badge variant="secondary">
-            {STAGE_LABELS[currentStage] || currentStage}
-          </Badge>
-          <Badge
-            variant={
-              priority === "High"
-                ? "destructive"
-                : priority === "Medium"
-                  ? "default"
-                  : "outline"
-            }
-          >
-            {PRIORITY_LABELS[priority] || priority}
-          </Badge>
+        <div className="flex shrink-0 items-center gap-2">
+          <StageBadge stage={currentStage} />
+          <PriorityBadge priority={priority} />
         </div>
       </div>
 
@@ -97,7 +72,7 @@ export function ApplicationCard({
 
       {/* Tags */}
       {tags.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
+        <div className="mt-3 border-t border-border pt-3 flex flex-wrap gap-1.5">
           {tags.map((tag) => (
             <Badge key={tag} variant="outline" className="type-small">
               {tag}

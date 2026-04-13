@@ -23,22 +23,7 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
-
-const INTERVIEW_TYPES = [
-  { value: "RecruiterScreen", label: "Recruiter Screen" },
-  { value: "HRScreen", label: "HR Screen" },
-  { value: "AssessmentReview", label: "Assessment Review" },
-  { value: "TechnicalInterview", label: "Technical Interview" },
-  { value: "FinalInterview", label: "Final Interview" },
-  { value: "OfferDiscussion", label: "Offer Discussion" },
-];
-
-const INTERVIEW_STATUSES = [
-  { value: "Scheduled", label: "Scheduled" },
-  { value: "Completed", label: "Completed" },
-  { value: "Cancelled", label: "Cancelled" },
-  { value: "NoShow", label: "No Show" },
-];
+import { INTERVIEW_STATUS_ITEMS, INTERVIEW_TYPE_ITEMS } from "./interviewLabels";
 
 interface InterviewData {
   id?: string;
@@ -133,13 +118,11 @@ export function InterviewModal({
 
       if (!res.ok) {
         const data = await res.json();
-        toast.error(data.error?.message || "Failed to save interview.");
+        toast.error(data.error?.message || "Failed to save.");
         return;
       }
 
-      toast.success(
-        isEditing ? "Interview updated." : "Interview created."
-      );
+      toast.success(isEditing ? "Updated." : "Created.");
       onOpenChange(false);
       router.refresh();
     } finally {
@@ -161,18 +144,19 @@ export function InterviewModal({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4">
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label>Interview Type</Label>
             <Select
               name="interviewType"
               value={interviewType}
               onValueChange={(v) => setInterviewType(v ?? "")}
+              items={INTERVIEW_TYPE_ITEMS}
             >
               <SelectTrigger className="w-full" aria-label="Interview type">
                 <SelectValue placeholder="Select type..." />
               </SelectTrigger>
               <SelectContent>
-                {INTERVIEW_TYPES.map((t) => (
+                {INTERVIEW_TYPE_ITEMS.map((t) => (
                   <SelectItem key={t.value} value={t.value}>
                     {t.label}
                   </SelectItem>
@@ -181,7 +165,7 @@ export function InterviewModal({
             </Select>
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="interview-scheduledAt">Date & Time</Label>
             <Input
               id="interview-scheduledAt"
@@ -191,7 +175,7 @@ export function InterviewModal({
             />
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="interview-locationOrLink">Location or Link</Label>
             <Input
               id="interview-locationOrLink"
@@ -202,18 +186,19 @@ export function InterviewModal({
             />
           </div>
 
-          <div className="grid gap-1.5">
-            <Label>Status</Label>
+          <div className="grid gap-2">
+            <Label htmlFor="interview-status">Status</Label>
             <Select
               name="status"
               value={status}
               onValueChange={(v) => setStatus(v ?? "Scheduled")}
+              items={INTERVIEW_STATUS_ITEMS}
             >
-              <SelectTrigger className="w-full" aria-label="Interview status">
+              <SelectTrigger id="interview-status" className="w-full" aria-label="Interview status">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {INTERVIEW_STATUSES.map((s) => (
+                {INTERVIEW_STATUS_ITEMS.map((s) => (
                   <SelectItem key={s.value} value={s.value}>
                     {s.label}
                   </SelectItem>
@@ -222,7 +207,7 @@ export function InterviewModal({
             </Select>
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="interview-notes">Notes</Label>
             <Textarea
               id="interview-notes"

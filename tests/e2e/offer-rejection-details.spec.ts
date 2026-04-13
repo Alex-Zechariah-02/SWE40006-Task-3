@@ -40,11 +40,11 @@ test("applications: offer and rejection details can be added, edited, and remove
   expect(offerPatch.res.ok()).toBeTruthy();
 
   await page.goto(`/app/applications/${encodeURIComponent(applicationId)}`);
-  await expect(page.getByText("OFFER DETAIL", { exact: true })).toBeVisible();
+  await expect(page.getByText("Offer Detail", { exact: true })).toBeVisible();
 
   const offerSection = page
-    .locator("div.pt-6")
-    .filter({ has: page.getByText("OFFER DETAIL", { exact: true }) })
+    .locator('[data-slot="card"]')
+    .filter({ has: page.getByText("Offer Detail", { exact: true }) })
     .first();
 
   // Add offer detail
@@ -53,29 +53,87 @@ test("applications: offer and rejection details can be added, edited, and remove
   await expect(offerDialog).toBeVisible();
   await offerDialog.getByLabel("Decision status").fill("Pending");
   await offerDialog.getByLabel("Notes").fill("E2E offer notes");
+
+  const offerCreateResPromise = page.waitForResponse((res) => {
+    return (
+      res
+        .url()
+        .includes(
+          `/api/applications/${encodeURIComponent(applicationId)}/offer`
+        ) &&
+      res.request().method() === "POST" &&
+      res.status() === 201
+    );
+  });
   await offerDialog.getByRole("button", { name: "Save" }).click();
+  await offerCreateResPromise;
   await expect(offerDialog).toBeHidden();
 
-  await expect(offerSection.getByText("Pending", { exact: true })).toBeVisible();
-  await expect(offerSection.getByText("E2E offer notes")).toBeVisible();
+  await page.reload();
+  const offerSectionAfterAdd = page
+    .locator('[data-slot="card"]')
+    .filter({ has: page.getByText("Offer Detail", { exact: true }) })
+    .first();
+
+  await expect(
+    offerSectionAfterAdd.getByText("Pending", { exact: true })
+  ).toBeVisible();
+  await expect(offerSectionAfterAdd.getByText("E2E offer notes")).toBeVisible();
 
   // Edit offer detail
-  await offerSection
+  await offerSectionAfterAdd
     .getByRole("button", { name: "Edit", exact: true })
     .click();
   const offerEditDialog = page.getByRole("dialog", { name: "Edit Offer Detail" });
   await expect(offerEditDialog).toBeVisible();
   await offerEditDialog.getByLabel("Decision status").fill("Accepted");
   await offerEditDialog.getByLabel("Compensation").fill("E2E comp note");
+
+  const offerUpdateResPromise = page.waitForResponse((res) => {
+    return (
+      res
+        .url()
+        .includes(
+          `/api/applications/${encodeURIComponent(applicationId)}/offer`
+        ) &&
+      res.request().method() === "PATCH" &&
+      res.ok()
+    );
+  });
   await offerEditDialog.getByRole("button", { name: "Save" }).click();
+  await offerUpdateResPromise;
   await expect(offerEditDialog).toBeHidden();
 
-  await expect(offerSection.getByText("Accepted", { exact: true })).toBeVisible();
-  await expect(offerSection.getByText("E2E comp note")).toBeVisible();
+  await page.reload();
+  const offerSectionAfterEdit = page
+    .locator('[data-slot="card"]')
+    .filter({ has: page.getByText("Offer Detail", { exact: true }) })
+    .first();
+  await expect(
+    offerSectionAfterEdit.getByText("Accepted", { exact: true })
+  ).toBeVisible();
+  await expect(offerSectionAfterEdit.getByText("E2E comp note")).toBeVisible();
 
   // Remove offer detail (uses confirm())
+  const removeOfferResPromise = page.waitForResponse((res) => {
+    return (
+      res
+        .url()
+        .includes(`/api/applications/${encodeURIComponent(applicationId)}/offer`) &&
+      res.request().method() === "DELETE"
+    );
+  });
   page.once("dialog", (d) => d.accept());
-  await offerSection.getByRole("button", { name: "Remove" }).click();
+  await offerSectionAfterEdit.getByRole("button", { name: "Remove" }).click();
+  const removeOfferRes = await removeOfferResPromise;
+  expect(removeOfferRes.ok()).toBeTruthy();
+
+  await page.reload();
+  const offerSectionAfter = page
+    .locator('[data-slot="card"]')
+    .filter({ has: page.getByText("Offer Detail", { exact: true }) })
+    .first();
+  await expect(offerSectionAfter.getByRole("button", { name: "Add", exact: true })).toBeVisible();
   await expect(
     page.getByText(
       "Add offer details to record dates, compensation notes, and your decision."
@@ -89,11 +147,11 @@ test("applications: offer and rejection details can be added, edited, and remove
   expect(rejectionPatch.res.ok()).toBeTruthy();
 
   await page.reload();
-  await expect(page.getByText("REJECTION DETAIL", { exact: true })).toBeVisible();
+  await expect(page.getByText("Rejection Detail", { exact: true })).toBeVisible();
 
   const rejectionSection = page
-    .locator("div.pt-6")
-    .filter({ has: page.getByText("REJECTION DETAIL", { exact: true }) })
+    .locator('[data-slot="card"]')
+    .filter({ has: page.getByText("Rejection Detail", { exact: true }) })
     .first();
 
   await rejectionSection.getByRole("button", { name: "Add", exact: true }).click();
@@ -101,25 +159,90 @@ test("applications: offer and rejection details can be added, edited, and remove
   await expect(rejectionDialog).toBeVisible();
   await rejectionDialog.getByLabel("Rejected at stage").fill("Interview");
   await rejectionDialog.getByLabel("Notes").fill("E2E rejection notes");
+
+  const rejectionCreateResPromise = page.waitForResponse((res) => {
+    return (
+      res
+        .url()
+        .includes(
+          `/api/applications/${encodeURIComponent(applicationId)}/rejection`
+        ) &&
+      res.request().method() === "POST" &&
+      res.status() === 201
+    );
+  });
   await rejectionDialog.getByRole("button", { name: "Save" }).click();
+  await rejectionCreateResPromise;
   await expect(rejectionDialog).toBeHidden();
 
-  await expect(rejectionSection.getByText("Interview", { exact: true })).toBeVisible();
-  await expect(rejectionSection.getByText("E2E rejection notes")).toBeVisible();
+  await page.reload();
+  const rejectionSectionAfterAdd = page
+    .locator('[data-slot="card"]')
+    .filter({ has: page.getByText("Rejection Detail", { exact: true }) })
+    .first();
 
-  await rejectionSection.getByRole("button", { name: "Edit" }).click();
+  await expect(
+    rejectionSectionAfterAdd.getByText("Interview", { exact: true })
+  ).toBeVisible();
+  await expect(rejectionSectionAfterAdd.getByText("E2E rejection notes")).toBeVisible();
+
+  await rejectionSectionAfterAdd.getByRole("button", { name: "Edit" }).click();
   const rejectionEditDialog = page.getByRole("dialog", { name: "Edit Rejection Detail" });
   await expect(rejectionEditDialog).toBeVisible();
   await rejectionEditDialog.getByLabel("Notes").fill("E2E rejection notes (updated)");
+
+  const rejectionUpdateResPromise = page.waitForResponse((res) => {
+    return (
+      res
+        .url()
+        .includes(
+          `/api/applications/${encodeURIComponent(applicationId)}/rejection`
+        ) &&
+      res.request().method() === "PATCH" &&
+      res.ok()
+    );
+  });
   await rejectionEditDialog.getByRole("button", { name: "Save" }).click();
+  await rejectionUpdateResPromise;
   await expect(rejectionEditDialog).toBeHidden();
 
-  await expect(rejectionSection.getByText("E2E rejection notes (updated)")).toBeVisible();
-
-  page.once("dialog", (d) => d.accept());
-  await rejectionSection.getByRole("button", { name: "Remove" }).click();
+  await page.reload();
+  const rejectionSectionAfterEdit = page
+    .locator('[data-slot="card"]')
+    .filter({ has: page.getByText("Rejection Detail", { exact: true }) })
+    .first();
   await expect(
-    page.getByText("Add rejection details to record what stage you reached and any notes.")
+    rejectionSectionAfterEdit.getByText("E2E rejection notes (updated)")
+  ).toBeVisible();
+
+  const removeRejectionResPromise = page.waitForResponse((res) => {
+    return (
+      res
+        .url()
+        .includes(
+          `/api/applications/${encodeURIComponent(applicationId)}/rejection`
+        ) &&
+      res.request().method() === "DELETE"
+    );
+  });
+  page.once("dialog", (d) => d.accept());
+  await rejectionSectionAfterEdit.getByRole("button", { name: "Remove" }).click();
+  const removeRejectionRes = await removeRejectionResPromise;
+  expect(removeRejectionRes.ok()).toBeTruthy();
+
+  // The card should revert to its empty state, but RSC caching can be stale in tests.
+  await page.reload({ waitUntil: "domcontentloaded" });
+  const rejectionSectionAfterRemove = page
+    .locator('[data-slot="card"]')
+    .filter({ has: page.getByText("Rejection Detail", { exact: true }) })
+    .first();
+  await expect(
+    rejectionSectionAfterRemove.getByRole("button", { name: "Add", exact: true })
+  ).toBeVisible();
+  await expect(
+    rejectionSectionAfterRemove.getByText(
+      "Add rejection details to record what stage you reached and any notes."
+    )
   ).toBeVisible();
 
   // Best-effort cleanup

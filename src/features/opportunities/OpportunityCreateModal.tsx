@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { FormMessage } from "@/components/ui/form-message";
 import {
   Select,
   SelectContent,
@@ -81,15 +82,11 @@ export function OpportunityCreateModal() {
         if (data.error?.fields) {
           setErrors(data.error.fields);
         }
-        toast.error(data.error?.message || "Failed to create opportunity.");
+        toast.error(data.error?.message || "Failed to create.");
         return;
       }
 
-      toast.success(
-        data.created
-          ? "Opportunity created."
-          : "Opportunity already exists."
-      );
+      toast.success(data.created ? "Created." : "Already exists.");
       setOpen(false);
       setTags([]);
       router.refresh();
@@ -116,23 +113,23 @@ export function OpportunityCreateModal() {
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4">
-          <div className="grid gap-1.5">
-            <Label htmlFor="opp-title">Title</Label>
-            <Input id="opp-title" name="title" required maxLength={200} placeholder="e.g. Software Engineering Intern" />
-            {errors.title && <p className="type-small text-destructive">{errors.title[0]}</p>}
+          <div className="grid gap-2">
+            <Label htmlFor="opp-title" required>Title</Label>
+            <Input id="opp-title" name="title" required aria-describedby="opp-title-error" maxLength={200} placeholder="e.g. Software Engineering Intern" />
+            <FormMessage id="opp-title-error" error>{errors.title?.[0]}</FormMessage>
           </div>
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="opp-company">Company</Label>
-            <Input id="opp-company" name="companyName" required maxLength={200} placeholder="e.g. Intel" />
-            {errors.companyName && <p className="type-small text-destructive">{errors.companyName[0]}</p>}
+          <div className="grid gap-2">
+            <Label htmlFor="opp-company" required>Company</Label>
+            <Input id="opp-company" name="companyName" required aria-describedby="opp-company-error" maxLength={200} placeholder="e.g. Intel" />
+            <FormMessage id="opp-company-error" error>{errors.companyName?.[0]}</FormMessage>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
-              <Label>Type</Label>
-              <Select name="opportunityType" required>
-                <SelectTrigger className="w-full">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label htmlFor="opp-type" required>Type</Label>
+              <Select name="opportunityType" required items={OPPORTUNITY_TYPES}>
+                <SelectTrigger id="opp-type" className="w-full" aria-describedby="opp-type-error">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -143,13 +140,13 @@ export function OpportunityCreateModal() {
                   ))}
                 </SelectContent>
               </Select>
-              {errors.opportunityType && <p className="type-small text-destructive">{errors.opportunityType[0]}</p>}
+              <FormMessage id="opp-type-error" error>{errors.opportunityType?.[0]}</FormMessage>
             </div>
 
-            <div className="grid gap-1.5">
-              <Label>Work mode</Label>
-              <Select name="remoteMode" required>
-                <SelectTrigger className="w-full">
+            <div className="grid gap-2">
+              <Label htmlFor="opp-mode" required>Work mode</Label>
+              <Select name="remoteMode" required items={REMOTE_MODES}>
+                <SelectTrigger id="opp-mode" className="w-full" aria-describedby="opp-mode-error">
                   <SelectValue placeholder="Select mode" />
                 </SelectTrigger>
                 <SelectContent>
@@ -160,37 +157,37 @@ export function OpportunityCreateModal() {
                   ))}
                 </SelectContent>
               </Select>
-              {errors.remoteMode && <p className="type-small text-destructive">{errors.remoteMode[0]}</p>}
+              <FormMessage id="opp-mode-error" error>{errors.remoteMode?.[0]}</FormMessage>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid gap-2">
               <Label htmlFor="opp-location">Location</Label>
               <Input id="opp-location" name="location" maxLength={200} placeholder="e.g. Penang" />
             </div>
-            <div className="grid gap-1.5">
+            <div className="grid gap-2">
               <Label htmlFor="opp-deadline">Deadline</Label>
               <Input id="opp-deadline" name="deadline" type="date" />
             </div>
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="opp-url">Source URL</Label>
             <Input id="opp-url" name="sourceUrl" type="url" placeholder="https://..." />
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="opp-snippet">Snippet</Label>
             <Textarea id="opp-snippet" name="snippet" rows={2} maxLength={2000} placeholder="Brief description..." />
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="opp-notes">Notes</Label>
             <Textarea id="opp-notes" name="notes" rows={2} maxLength={5000} placeholder="Your notes..." />
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label>Tags</Label>
             <TagInput value={tags} onChange={setTags} />
           </div>

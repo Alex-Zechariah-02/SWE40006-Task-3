@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { FormMessage } from "@/components/ui/form-message";
 import {
   Select,
   SelectContent,
@@ -34,14 +35,23 @@ interface CompanyOption {
 interface ContactCreateModalProps {
   companies: CompanyOption[];
   defaultCompanyId?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function ContactCreateModal({
   companies,
   defaultCompanyId,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: ContactCreateModalProps) {
   const router = useRouter();
-  const [open, setOpen] = React.useState(false);
+  const [internalOpen, setInternalOpen] = React.useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled
+    ? (controlledOnOpenChange ?? (() => {}))
+    : setInternalOpen;
   const [pending, setPending] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string[]>>({});
 
@@ -73,11 +83,11 @@ export function ContactCreateModal({
 
       if (!res.ok) {
         if (data.error?.fields) setErrors(data.error.fields);
-        toast.error(data.error?.message || "Failed to create contact.");
+        toast.error(data.error?.message || "Failed to create.");
         return;
       }
 
-      toast.success("Contact created.");
+      toast.success("Created.");
       setOpen(false);
       router.refresh();
     } finally {
@@ -87,14 +97,16 @@ export function ContactCreateModal({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button size="sm">
-            <Plus className="mr-1.5 size-4" />
-            New Contact
-          </Button>
-        }
-      />
+      {!isControlled && (
+        <DialogTrigger
+          render={
+            <Button size="sm">
+              <Plus className="mr-1.5 size-4" />
+              New Contact
+            </Button>
+          }
+        />
+      )}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>New Contact</DialogTitle>
@@ -103,10 +115,15 @@ export function ContactCreateModal({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4">
-          <div className="grid gap-1.5">
-            <Label>Company</Label>
-            <Select name="companyId" required defaultValue={defaultCompanyId}>
-              <SelectTrigger className="w-full">
+          <div className="grid gap-2">
+            <Label htmlFor="ct-company" required>Company</Label>
+            <Select
+              name="companyId"
+              required
+              defaultValue={defaultCompanyId}
+              items={companies.map((c) => ({ value: c.id, label: c.name }))}
+            >
+              <SelectTrigger id="ct-company" className="w-full" aria-describedby="ct-company-error">
                 <SelectValue placeholder="Select company" />
               </SelectTrigger>
               <SelectContent>
@@ -122,38 +139,38 @@ export function ContactCreateModal({
                 Add a company first before creating contacts.
               </p>
             )}
-            {errors.companyId && <p className="type-small text-destructive">{errors.companyId[0]}</p>}
+            <FormMessage id="ct-company-error" error>{errors.companyId?.[0]}</FormMessage>
           </div>
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="ct-name">Name</Label>
-            <Input id="ct-name" name="name" required maxLength={100} placeholder="e.g. Jane Smith" />
-            {errors.name && <p className="type-small text-destructive">{errors.name[0]}</p>}
+          <div className="grid gap-2">
+            <Label htmlFor="ct-name" required>Name</Label>
+            <Input id="ct-name" name="name" required aria-describedby="ct-name-error" maxLength={100} placeholder="e.g. Jane Smith" />
+            <FormMessage id="ct-name-error" error>{errors.name?.[0]}</FormMessage>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid gap-2">
               <Label htmlFor="ct-title">Title</Label>
               <Input id="ct-title" name="title" maxLength={200} placeholder="e.g. Recruiter" />
             </div>
-            <div className="grid gap-1.5">
+            <div className="grid gap-2">
               <Label htmlFor="ct-email">Email</Label>
               <Input id="ct-email" name="email" type="email" placeholder="jane@company.com" />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid gap-2">
               <Label htmlFor="ct-phone">Phone</Label>
               <Input id="ct-phone" name="phone" maxLength={40} placeholder="+60..." />
             </div>
-            <div className="grid gap-1.5">
+            <div className="grid gap-2">
               <Label htmlFor="ct-linkedin">LinkedIn</Label>
               <Input id="ct-linkedin" name="linkedinUrl" type="url" placeholder="https://linkedin.com/in/..." />
             </div>
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="ct-notes">Notes</Label>
             <Textarea id="ct-notes" name="notes" rows={2} maxLength={5000} placeholder="Notes about this person..." />
           </div>

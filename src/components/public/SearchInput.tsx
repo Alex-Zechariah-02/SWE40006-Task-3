@@ -13,7 +13,7 @@ export function SearchInput({ value, onChange, isLoading }: SearchInputProps) {
   return (
     <div className="relative">
       <Search
-        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+        className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground"
         aria-hidden
       />
       {isLoading && (
@@ -27,7 +27,7 @@ export function SearchInput({ value, onChange, isLoading }: SearchInputProps) {
         placeholder="Search internships, graduate programs, or roles…"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-11 pl-10 pr-10 text-base"
+        className="h-12 pl-10 pr-10 text-lg"
         aria-label="Search opportunities"
         aria-busy={isLoading ? "true" : "false"}
       />

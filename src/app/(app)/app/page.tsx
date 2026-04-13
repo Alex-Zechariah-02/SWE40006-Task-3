@@ -1,41 +1,45 @@
 import { getDashboardData } from "@/lib/db/dashboard";
 import { getSessionOrRedirect } from "@/lib/auth/session";
-import { prisma } from "@/lib/prisma";
+import { getUserIdFromSessionOrNull } from "@/lib/auth/user";
 import { DashboardCards } from "@/features/dashboard/DashboardCards";
 import { NextUpSection } from "@/features/dashboard/NextUpSection";
+import { QuickActionsPanel } from "@/features/dashboard/QuickActionsPanel";
 import { UrgentActionsSection } from "@/features/dashboard/UrgentActionsSection";
 import { RecentActivitySection } from "@/features/dashboard/RecentActivitySection";
-import { CompanyWatchlistSection } from "@/features/dashboard/CompanyWatchlistSection";
+
 import { PageHeader } from "@/components/shared/PageHeader";
+import { PageContainer } from "@/components/shared/PageContainer";
 
 export default async function Page() {
   const session = await getSessionOrRedirect("/app");
-  const user = await prisma.user.findUnique({
-    where: { email: session.user?.email ?? "" },
-    select: { id: true },
-  });
-  if (!user) return null;
+  const userId = await getUserIdFromSessionOrNull(session);
+  if (!userId) return null;
 
-  const data = await getDashboardData(user.id);
+  const data = await getDashboardData(userId);
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 py-10 space-y-8">
-      <PageHeader title="Dashboard" description="Your career pipeline at a glance." />
-      <DashboardCards
-        activeApplications={data.activeApplications}
-        upcomingInterviews={data.upcomingInterviews}
-        followUpsDue={data.followUpsDue}
-        deadlinesNear={data.deadlinesNear}
-        savedOpportunities={data.savedOpportunities}
-      />
-      <div className="grid gap-6 lg:grid-cols-2">
-        <NextUpSection nextInterview={data.nextInterview} nearestDeadline={data.nearestDeadline} />
+    <PageContainer width="wide">
+      <div className="space-y-6">
+        <PageHeader title="Dashboard" description="Welcome back — here's your pipeline overview." />
         <UrgentActionsSection items={data.urgentActionItems} />
-      </div>
-      <div className="grid gap-6 lg:grid-cols-2">
+
+        <DashboardCards
+          activeApplications={data.activeApplications}
+          upcomingInterviews={data.upcomingInterviews}
+          deadlinesNear={data.deadlinesNear}
+        />
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-stretch">
+          <div className="h-full lg:col-span-2">
+            <NextUpSection nextInterview={data.nextInterview} nearestDeadline={data.nearestDeadline} />
+          </div>
+          <div className="h-full">
+            <QuickActionsPanel />
+          </div>
+        </div>
+
         <RecentActivitySection activities={data.recentActivity} />
-        <CompanyWatchlistSection companies={data.companyWatchlist} />
       </div>
-    </div>
+    </PageContainer>
   );
 }

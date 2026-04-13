@@ -1,0 +1,112 @@
+import type { PrismaClient } from "@prisma/client";
+
+import { upsertCompany } from "./upsertCompanyAndOpportunity";
+
+export async function seedCompanies(prisma: PrismaClient, params: { userId: string }) {
+  const companies = await Promise.all([
+    upsertCompany(prisma, {
+      userId: params.userId,
+      name: "Intel Malaysia",
+      website: "https://www.intel.com",
+      location: "Penang, Malaysia",
+      industry: "Semiconductors",
+      techStackNotes: "C/C++, Python, firmware, validation, tooling.",
+      applicationProcessNotes: "Campus pipeline; recruiter screen; technical interview.",
+      interviewNotes: "Emphasis on fundamentals, debugging, and communication.",
+      compensationNotes: "Internship compensation varies by intake and team.",
+      generalNotes: "Strong validation culture; hardware + software collaboration.",
+    }),
+    upsertCompany(prisma, {
+      userId: params.userId,
+      name: "SanDisk",
+      website: "https://www.sandisk.com",
+      location: "Penang, Malaysia",
+      industry: "Storage",
+    }),
+    upsertCompany(prisma, {
+      userId: params.userId,
+      name: "PETRONAS Digital",
+      website: "https://www.petronas.com",
+      location: "Kuala Lumpur, Malaysia",
+      industry: "Energy / Digital",
+      techStackNotes: "Data platforms, cloud services, internal products.",
+      applicationProcessNotes: "Graduate intake; assessments; interviews.",
+      interviewNotes: "Case-style questions + values alignment.",
+      compensationNotes: "Graduate program compensation varies by track.",
+      generalNotes: "Enterprise environment; stakeholder-heavy projects.",
+    }),
+    upsertCompany(prisma, {
+      userId: params.userId,
+      name: "Atlassian",
+      website: "https://www.atlassian.com",
+      location: "Remote (APAC)",
+      industry: "SaaS",
+    }),
+    upsertCompany(prisma, {
+      userId: params.userId,
+      name: "AMD",
+      website: "https://www.amd.com",
+      location: "Penang, Malaysia",
+      industry: "Semiconductors",
+      techStackNotes: "Validation, scripting, tooling, CI.",
+      applicationProcessNotes: "Recruiter screen; technical rounds; team match.",
+      interviewNotes: "Signals: test strategy, problem decomposition, ownership.",
+      compensationNotes: "Graduate compensation varies by role and level.",
+      generalNotes: "High bar on quality and collaboration across teams.",
+    }),
+    upsertCompany(prisma, {
+      userId: params.userId,
+      name: "Shell",
+      website: "https://www.shell.com",
+      location: "Kuala Lumpur, Malaysia",
+      industry: "Energy",
+      techStackNotes: "Data & analytics, cloud tooling, internal platforms.",
+      applicationProcessNotes: "Online assessment; structured interviews.",
+      interviewNotes: "Structured behavioral + technical scenario questions.",
+      compensationNotes: "Graduate program varies by track.",
+      generalNotes: "Process-driven; strong emphasis on communication.",
+    }),
+    upsertCompany(prisma, {
+      userId: params.userId,
+      name: "Keysight",
+      website: "https://www.keysight.com",
+      location: "Penang, Malaysia",
+      industry: "Test & measurement",
+      techStackNotes: "Software engineering; systems; test automation.",
+      applicationProcessNotes: "Recruiter screen then technical interview.",
+      interviewNotes: "Fundamentals + practical debugging signals.",
+      compensationNotes: "Graduate compensation varies by role and level.",
+      generalNotes: "Good engineering culture; operational clarity matters.",
+    }),
+    upsertCompany(prisma, {
+      userId: params.userId,
+      name: "Motorola Solutions",
+      website: "https://www.motorolasolutions.com",
+      location: "Penang, Malaysia",
+      industry: "Communications",
+    }),
+    upsertCompany(prisma, {
+      userId: params.userId,
+      name: "AirAsia MOVE",
+      website: "https://www.airasia.com",
+      location: "Kuala Lumpur, Malaysia",
+      industry: "Travel / Apps",
+    }),
+    upsertCompany(prisma, {
+      userId: params.userId,
+      name: "Dell Technologies",
+      website: "https://www.dell.com",
+      location: "Cyberjaya, Malaysia",
+      industry: "Hardware / Enterprise",
+    }),
+    upsertCompany(prisma, {
+      userId: params.userId,
+      name: "Huawei",
+      website: "https://www.huawei.com",
+      location: "Kuala Lumpur, Malaysia",
+      industry: "Cloud / Telecom",
+    }),
+  ]);
+
+  return new Map(companies.map((c) => [c.name, c]));
+}

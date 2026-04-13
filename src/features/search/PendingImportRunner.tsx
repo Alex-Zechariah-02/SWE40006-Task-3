@@ -105,10 +105,10 @@ export function PendingImportRunner() {
     return (
       <div {...wrapperProps} className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
         <div className="flex items-start gap-2">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          <AlertTriangle className="mt-1 h-4 w-4 shrink-0" aria-hidden />
           <div className="min-w-0">
             <div className="font-medium">Import failed</div>
-            <div className="mt-0.5 text-destructive/90">{message}</div>
+            <div className="mt-1 text-destructive/90">{message}</div>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -134,10 +134,10 @@ export function PendingImportRunner() {
     return (
       <div {...wrapperProps} className="rounded-md border border-border bg-card px-4 py-3 text-sm" role="status">
         <div className="flex items-start gap-2">
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--status-success)]" aria-hidden />
+          <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-[var(--status-success)]" aria-hidden />
           <div>
             <div className="font-medium">Imported</div>
-            <div className="mt-0.5 text-muted-foreground">
+            <div className="mt-1 text-muted-foreground">
               Redirecting to your opportunity.
             </div>
           </div>
@@ -150,12 +150,12 @@ export function PendingImportRunner() {
   return (
     <div {...wrapperProps} className="rounded-md border border-border bg-card px-4 py-3 text-sm" role="status">
       <div className="flex items-start gap-2">
-        <Download className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        <Download className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
         <div>
           <div className="font-medium">
             {status === "checking" ? "Preparing import" : "Importing"}
           </div>
-          <div className="mt-0.5 text-muted-foreground">
+          <div className="mt-1 text-muted-foreground">
             {status === "checking"
               ? "Checking for a saved opportunity."
               : "Saving the opportunity into your workspace."}

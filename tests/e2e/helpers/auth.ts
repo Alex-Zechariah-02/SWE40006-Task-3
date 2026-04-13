@@ -7,8 +7,15 @@ export const DEMO_PASSWORD = "Demo123!";
 export const E2E_EMAIL = "e2e@careerdeck.test";
 export const E2E_PASSWORD = "E2E123!";
 
-function escapeForRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+async function waitForPath(page: Page, targetPath: string) {
+  await page.waitForURL((raw) => {
+    try {
+      const url = new URL(raw);
+      return url.pathname === targetPath || url.pathname.startsWith(`${targetPath}/`);
+    } catch {
+      return false;
+    }
+  });
 }
 
 async function login(page: Page, params: { email: string; password: string; nextPath?: string }) {
@@ -23,14 +30,13 @@ async function login(page: Page, params: { email: string; password: string; next
   await page.getByLabel("Password").fill(params.password);
 
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL(/\/app(\?|$)/);
-  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await waitForPath(page, "/app");
 
   if (nextPath !== "/app") {
     await page.goto(nextPath);
   }
 
-  await page.waitForURL(new RegExp(escapeForRegExp(nextPath)));
+  await waitForPath(page, nextPath);
 }
 
 export async function loginAsDemo(page: Page, opts?: { nextPath?: string }) {
@@ -45,6 +51,8 @@ export async function loginAsE2E(page: Page, opts?: { nextPath?: string }) {
 }
 
 export async function logout(page: Page) {
+  // Sign out lives inside the UserMenu dropdown — open it first
+  await page.getByRole("button", { name: "Account menu" }).click();
   await page.getByRole("button", { name: "Sign out" }).click();
   await page.waitForURL(/\/login(\?|$)/);
 }

@@ -30,6 +30,7 @@
   --color-status-success: var(--status-success);
   --color-status-warning: var(--status-warning);
   --color-status-danger: var(--status-danger);
+  --color-status-info: var(--status-info);
 
   /* Chart tokens (kept for shadcn compat) */
   --color-chart-1: var(--chart-1);
@@ -62,44 +63,121 @@
   --font-mono: var(--font-mono);
   --font-heading: var(--font-display);
   --font-display: var(--font-display);
+  --font-condensed: var(--font-condensed);
+  --font-smallcaps: var(--font-smallcaps);
+
+  /* Spacing scale (8px grid) */
+  --spacing-cd-1: 4px;
+  --spacing-cd-2: 8px;
+  --spacing-cd-3: 12px;
+  --spacing-cd-4: 16px;
+  --spacing-cd-5: 24px;
+  --spacing-cd-6: 32px;
+  --spacing-cd-7: 40px;
+  --spacing-cd-8: 48px;
+
+  /* New semantic colors */
+  --color-info: var(--info);
+  --color-highlight: var(--highlight);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+
+  /* Stage badge colors */
+  --color-stage-saved-bg: var(--stage-saved-bg);
+  --color-stage-saved-fg: var(--stage-saved-fg);
+  --color-stage-shortlisted-bg: var(--stage-shortlisted-bg);
+  --color-stage-shortlisted-fg: var(--stage-shortlisted-fg);
+  --color-stage-applied-bg: var(--stage-applied-bg);
+  --color-stage-applied-fg: var(--stage-applied-fg);
+  --color-stage-assessment-bg: var(--stage-assessment-bg);
+  --color-stage-assessment-fg: var(--stage-assessment-fg);
+  --color-stage-interview-bg: var(--stage-interview-bg);
+  --color-stage-interview-fg: var(--stage-interview-fg);
+  --color-stage-offer-bg: var(--stage-offer-bg);
+  --color-stage-offer-fg: var(--stage-offer-fg);
+  --color-stage-rejected-bg: var(--stage-rejected-bg);
+  --color-stage-rejected-fg: var(--stage-rejected-fg);
+  --color-stage-withdrawn-bg: var(--stage-withdrawn-bg);
+  --color-stage-withdrawn-fg: var(--stage-withdrawn-fg);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px oklch(22% 0.02 80 / 0.08), 0 1px 2px oklch(22% 0.02 80 / 0.04);
+  --shadow-md: 0 2px 6px oklch(22% 0.02 80 / 0.08), 0 4px 14px oklch(22% 0.02 80 / 0.05);
+  --shadow-lg: 0 4px 8px oklch(22% 0.02 80 / 0.06), 0 8px 24px oklch(22% 0.02 80 / 0.08);
 }
 
 /* ---------- Light theme: Porcelain Slate ---------- */
 
 :root {
-  --background: #F6F3EC;
-  --foreground: #1F2833;
-  --card: #FFFFFF;
-  --card-foreground: #1F2833;
-  --popover: #FFFFFF;
-  --popover-foreground: #1F2833;
-  --primary: #4F62A8;
-  --primary-foreground: #F6F3EC;
-  --secondary: #ECE7DE;
-  --secondary-foreground: #1F2833;
-  --muted: #ECE7DE;
-  --muted-foreground: #5F6B79;
-  --accent: #ECE7DE;
-  --accent-foreground: #1F2833;
-  --destructive: #A45A63;
-  --border: #D6D0C5;
-  --input: #D6D0C5;
-  --ring: #4F62A8;
+  /* Surfaces */
+  --background: oklch(96% 0.01 80);
+  --foreground: oklch(22% 0.02 240);
+  --card: oklch(99% 0.005 80);
+  --card-foreground: oklch(22% 0.02 240);
+  --popover: oklch(99% 0.005 80);
+  --popover-foreground: oklch(22% 0.02 240);
 
-  --accent-brand-secondary: #2E6F73;
-  --status-success: #4E8767;
-  --status-warning: #A87432;
-  --status-danger: #A45A63;
+  /* Brand */
+  --primary: oklch(48% 0.1 265);
+  --primary-foreground: oklch(96% 0.01 80);
 
-  --chart-1: #4F62A8;
-  --chart-2: #2E6F73;
-  --chart-3: #4E8767;
-  --chart-4: #A87432;
-  --chart-5: #A45A63;
+  /* Secondary/Muted */
+  --secondary: oklch(93% 0.01 80);
+  --secondary-foreground: oklch(22% 0.02 240);
+  --muted: oklch(93% 0.01 80);
+  --muted-foreground: oklch(50% 0.02 240);
+  --accent: oklch(93% 0.01 80);
+  --accent-foreground: oklch(22% 0.02 240);
 
+  /* Semantic */
+  --destructive: oklch(52% 0.1 15);
+  --accent-brand-secondary: oklch(48% 0.08 185);
+
+  /* Status */
+  --status-success: oklch(50% 0.1 155);
+  --status-warning: oklch(52% 0.1 70);
+  --status-danger: oklch(52% 0.1 15);
+  --status-info: oklch(52% 0.08 235);
+
+  /* Structure */
+  --border: oklch(79% 0.01 80);
+  --input: oklch(87% 0.01 80);
+  --ring: oklch(48% 0.1 265);
+
+  /* Extended palette */
+  --info: oklch(52% 0.08 235);
+  --highlight: oklch(94% 0.04 90);
+  --surface-raised: oklch(100% 0 0);
+  --surface-sunken: oklch(93% 0.012 80);
+
+  /* Stage badge tokens (tinted backgrounds + foreground text) */
+  --stage-saved-bg: oklch(93% 0.02 250);
+  --stage-saved-fg: oklch(45% 0.04 250);
+  --stage-shortlisted-bg: oklch(93% 0.03 260);
+  --stage-shortlisted-fg: oklch(42% 0.08 260);
+  --stage-applied-bg: oklch(93% 0.03 240);
+  --stage-applied-fg: oklch(42% 0.08 240);
+  --stage-assessment-bg: oklch(94% 0.04 70);
+  --stage-assessment-fg: oklch(42% 0.1 70);
+  --stage-interview-bg: oklch(93% 0.04 185);
+  --stage-interview-fg: oklch(40% 0.08 185);
+  --stage-offer-bg: oklch(93% 0.04 155);
+  --stage-offer-fg: oklch(40% 0.1 155);
+  --stage-rejected-bg: oklch(94% 0.03 15);
+  --stage-rejected-fg: oklch(45% 0.1 15);
+  --stage-withdrawn-bg: oklch(93% 0.015 250);
+  --stage-withdrawn-fg: oklch(50% 0.03 250);
+
+  /* Charts */
+  --chart-1: oklch(48% 0.1 265);
+  --chart-2: oklch(48% 0.08 185);
+  --chart-3: oklch(50% 0.1 155);
+  --chart-4: oklch(52% 0.1 70);
+  --chart-5: oklch(52% 0.1 15);
+
+  /* Keep --radius and --cd-space-* tokens EXACTLY AS-IS */
   --radius: 0.75rem;
 
-  /* CareerDeck spacing scale (8px system) */
   --cd-space-1: 4px;
   --cd-space-2: 8px;
   --cd-space-3: 12px;
@@ -109,57 +187,100 @@
   --cd-space-7: 40px;
   --cd-space-8: 48px;
 
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #1F2833;
-  --sidebar-primary: #4F62A8;
-  --sidebar-primary-foreground: #F6F3EC;
-  --sidebar-accent: #ECE7DE;
-  --sidebar-accent-foreground: #1F2833;
-  --sidebar-border: #D6D0C5;
-  --sidebar-ring: #4F62A8;
+  /* Sidebar */
+  --sidebar: oklch(99% 0.005 80);
+  --sidebar-foreground: oklch(22% 0.02 240);
+  --sidebar-primary: oklch(48% 0.1 265);
+  --sidebar-primary-foreground: oklch(96% 0.01 80);
+  --sidebar-accent: oklch(93% 0.01 80);
+  --sidebar-accent-foreground: oklch(22% 0.02 240);
+  --sidebar-border: oklch(87% 0.01 80);
+  --sidebar-ring: oklch(48% 0.1 265);
 }
 
 /* ---------- Dark theme: Petrol Slate ---------- */
 
 .dark {
-  --background: #11151A;
-  --foreground: #F3F4F1;
-  --card: #171C23;
-  --card-foreground: #F3F4F1;
-  --popover: #171C23;
-  --popover-foreground: #F3F4F1;
-  --primary: #5E6FB3;
-  --primary-foreground: #F3F4F1;
-  --secondary: #1D2430;
-  --secondary-foreground: #F3F4F1;
-  --muted: #1D2430;
-  --muted-foreground: #A9B1BC;
-  --accent: #1D2430;
-  --accent-foreground: #F3F4F1;
-  --destructive: #A95C6B;
-  --border: #2A3442;
-  --input: #2A3442;
-  --ring: #5E6FB3;
+  /* Surfaces */
+  --background: oklch(17% 0.02 250);
+  --foreground: oklch(96% 0.005 100);
+  --card: oklch(22% 0.02 250);
+  --card-foreground: oklch(96% 0.005 100);
+  --popover: oklch(24% 0.02 250);
+  --popover-foreground: oklch(96% 0.005 100);
 
-  --accent-brand-secondary: #2C7A7B;
-  --status-success: #4B8B66;
-  --status-warning: #B5823E;
-  --status-danger: #A95C6B;
+  /* Brand */
+  --primary: oklch(62% 0.12 265);
+  --primary-foreground: oklch(96% 0.005 100);
 
-  --chart-1: #5E6FB3;
-  --chart-2: #2C7A7B;
-  --chart-3: #4B8B66;
-  --chart-4: #B5823E;
-  --chart-5: #A95C6B;
+  /* Secondary/Muted */
+  --secondary: oklch(25% 0.02 250);
+  --secondary-foreground: oklch(96% 0.005 100);
+  --muted: oklch(25% 0.02 250);
+  --muted-foreground: oklch(83% 0.015 240);
+  --accent: oklch(25% 0.02 250);
+  --accent-foreground: oklch(96% 0.005 100);
 
-  --sidebar: #171C23;
-  --sidebar-foreground: #F3F4F1;
-  --sidebar-primary: #5E6FB3;
-  --sidebar-primary-foreground: #F3F4F1;
-  --sidebar-accent: #1D2430;
-  --sidebar-accent-foreground: #F3F4F1;
-  --sidebar-border: #2A3442;
-  --sidebar-ring: #5E6FB3;
+  /* Semantic */
+  --destructive: oklch(65% 0.12 15);
+  --accent-brand-secondary: oklch(56% 0.1 185);
+
+  /* Status */
+  --status-success: oklch(65% 0.12 155);
+  --status-warning: oklch(67% 0.12 70);
+  --status-danger: oklch(65% 0.12 15);
+  --status-info: oklch(67% 0.1 235);
+
+  /* Structure */
+  --border: oklch(34% 0.02 250);
+  --input: oklch(30% 0.02 250);
+  --ring: oklch(62% 0.12 265);
+
+  /* Extended palette */
+  --info: oklch(62% 0.1 235);
+  --highlight: oklch(25% 0.04 90);
+  --surface-raised: oklch(25% 0.02 250);
+  --surface-sunken: oklch(14% 0.02 250);
+
+  /* Stage badge tokens (tinted backgrounds + foreground text) */
+  --stage-saved-bg: oklch(25% 0.01 250);
+  --stage-saved-fg: oklch(80% 0.02 250);
+  --stage-shortlisted-bg: oklch(25% 0.02 260);
+  --stage-shortlisted-fg: oklch(80% 0.06 260);
+  --stage-applied-bg: oklch(25% 0.02 240);
+  --stage-applied-fg: oklch(80% 0.06 240);
+  --stage-assessment-bg: oklch(26% 0.03 70);
+  --stage-assessment-fg: oklch(82% 0.08 70);
+  --stage-interview-bg: oklch(25% 0.03 185);
+  --stage-interview-fg: oklch(80% 0.06 185);
+  --stage-offer-bg: oklch(25% 0.03 155);
+  --stage-offer-fg: oklch(80% 0.08 155);
+  --stage-rejected-bg: oklch(26% 0.02 15);
+  --stage-rejected-fg: oklch(82% 0.08 15);
+  --stage-withdrawn-bg: oklch(25% 0.005 250);
+  --stage-withdrawn-fg: oklch(80% 0.01 250);
+
+  /* Charts */
+  --chart-1: oklch(62% 0.12 265);
+  --chart-2: oklch(56% 0.1 185);
+  --chart-3: oklch(60% 0.12 155);
+  --chart-4: oklch(62% 0.12 70);
+  --chart-5: oklch(60% 0.12 15);
+
+  /* Sidebar */
+  --sidebar: oklch(22% 0.02 250);
+  --sidebar-foreground: oklch(96% 0.005 100);
+  --sidebar-primary: oklch(62% 0.12 265);
+  --sidebar-primary-foreground: oklch(96% 0.005 100);
+  --sidebar-accent: oklch(25% 0.02 250);
+  --sidebar-accent-foreground: oklch(96% 0.005 100);
+  --sidebar-border: oklch(34% 0.02 250);
+  --sidebar-ring: oklch(62% 0.12 265);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.25);
+  --shadow-md: 0 2px 4px oklch(0% 0 0 / 0.25), 0 4px 12px oklch(0% 0 0 / 0.2);
+  --shadow-lg: 0 4px 8px oklch(0% 0 0 / 0.3), 0 8px 24px oklch(0% 0 0 / 0.25);
 }
 
 /* ---------- Base layer ---------- */
@@ -178,49 +299,324 @@
   }
 }
 
-/* ---------- Typography scale ---------- */
+/* ---------- Typography scale: Quiet Authority ---------- */
 
 @layer utilities {
   .type-display-xl {
     font-family: var(--font-display);
-    font-size: 40px;
+    font-size: 2.5rem;
     line-height: 1.1;
+    font-weight: 600;
+    letter-spacing: -0.025em;
   }
   .type-display-lg {
     font-family: var(--font-display);
-    font-size: 32px;
+    font-size: 2rem;
     line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: -0.02em;
   }
   .type-h1 {
-    font-size: 28px;
+    font-family: var(--font-display);
+    font-size: 1.75rem;
     line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -0.015em;
   }
   .type-h2 {
-    font-size: 22px;
+    font-family: var(--font-display);
+    font-size: 1.375rem;
     line-height: 1.25;
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
   .type-h3 {
-    font-size: 18px;
+    font-family: var(--font-display);
+    font-size: 1.125rem;
     line-height: 1.3;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+  .type-h4 {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    line-height: 1.35;
+    font-weight: 500;
   }
   .type-body {
-    font-size: 15px;
+    font-size: 0.9375rem;
     line-height: 1.55;
   }
   .type-small {
-    font-size: 13px;
+    font-size: 0.8125rem;
     line-height: 1.45;
+    letter-spacing: 0.005em;
+  }
+  .type-caption {
+    font-size: 0.75rem;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
+  }
+  .type-label {
+    font-size: 0.8125rem;
+    line-height: 1.1;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
   }
   .type-mono-label {
     font-family: var(--font-mono);
-    font-size: 12px;
-    line-height: 1.2;
-    letter-spacing: 0.06em;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    font-weight: 500;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
+  }
+  .type-code {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+  .type-code-sm {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    line-height: 1.35;
   }
   .label-value {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
   }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+  .type-table-header {
+    font-family: var(--font-condensed);
+    font-size: 0.8125rem;
+    line-height: 1.1;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .type-badge {
+    font-family: var(--font-smallcaps);
+    font-size: 0.75rem;
+    line-height: 1.2;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .type-emphasis {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
+  .type-body-medium {
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    font-weight: 500;
+  }
+  .type-small-medium {
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    letter-spacing: 0.005em;
+    font-weight: 500;
+  }
+  .type-section-label {
+    font-family: var(--font-condensed);
+    font-size: 0.75rem;
+    line-height: 1.1;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .type-overline {
+    font-family: var(--font-condensed);
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+}
+
+/* ---------- Focus ring ---------- */
+
+@layer utilities {
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+}
+
+/* ---------- Entrance animation ---------- */
+
+@layer utilities {
+  .animate-enter {
+    animation: enter 200ms ease-out;
+  }
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- Modal entrance ---------- */
+
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ---------- Skeleton shimmer ---------- */
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@layer utilities {
+  .animate-modal-enter {
+    animation: modal-enter 200ms ease-out;
+  }
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      oklch(50% 0 0 / 0.06) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+  .hover-lift {
+    transition: transform 150ms ease, box-shadow 150ms ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .hover-lift:hover {
+      transform: translateY(-1px);
+    }
+  }
+
+  /* Smooth row hover for list items */
+  .interactive-row {
+    transition: background-color 150ms ease;
+  }
+
+  /* Button press micro-interaction */
+  .btn-press {
+    transition: transform 100ms ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-press:active {
+      transform: scale(0.97);
+    }
+  }
+
+  /* Card hover lift with shadow */
+  .card-hover-lift {
+    transition: transform 200ms ease, box-shadow 200ms ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .card-hover-lift:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px oklch(0% 0 0 / 0.08);
+    }
+    .dark .card-hover-lift:hover {
+      box-shadow: 0 4px 12px oklch(0% 0 0 / 0.25);
+    }
+  }
+
+  /* Accent glow for primary interactive elements */
+  .accent-glow {
+    transition: box-shadow 200ms ease;
+  }
+  .accent-glow:hover {
+    box-shadow: 0 0 0 3px oklch(from var(--primary) l c h / 0.12);
+  }
+  .accent-glow:focus-visible {
+    box-shadow: 0 0 0 3px oklch(from var(--primary) l c h / 0.2);
+  }
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .hover-lift:hover,
+  .card-hover-lift:hover,
+  .btn-press:active {
+    transform: none !important;
+  }
+}
+
+/* ---------- Custom scrollbar ---------- */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(75% 0.01 80);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(60% 0.01 80);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: oklch(35% 0.02 250);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: oklch(45% 0.02 250);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(75% 0.01 80) transparent;
+}
+
+.dark * {
+  scrollbar-color: oklch(35% 0.02 250) transparent;
 }

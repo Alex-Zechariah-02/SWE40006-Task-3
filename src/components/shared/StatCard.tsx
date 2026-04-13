@@ -29,7 +29,7 @@ export function StatCard({
       className={cn(
         "gap-2",
         interactive &&
-          "cursor-pointer transition-colors hover:bg-muted/50",
+          "cursor-pointer transition-shadow duration-150 hover:shadow-md",
         className
       )}
       onClick={onClick}
@@ -39,9 +39,11 @@ export function StatCard({
           {Icon && (
             <Icon className="h-4 w-4 text-muted-foreground" aria-hidden />
           )}
-          <span className="type-mono-label text-muted-foreground">{label}</span>
+          <span className="type-table-header text-muted-foreground">{label}</span>
         </div>
-        <p className="type-display-lg font-semibold tabular-nums">{value}</p>
+        <p className="type-display-lg font-bold tabular-nums text-primary">
+          {value}
+        </p>
         {delta && (
           <span className="type-small text-muted-foreground">{delta}</span>
         )}

@@ -1,4 +1,5 @@
 import { SearchSurface } from "@/components/public/SearchSurface";
+import { PageContainer } from "@/components/shared/PageContainer";
 
 export default async function Page({
   searchParams,
@@ -10,11 +11,11 @@ export default async function Page({
   const q = Array.isArray(qRaw) ? qRaw[0] : qRaw;
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-6 py-10">
-      <h1 className="type-h1 font-semibold mb-6 text-balance">
+    <PageContainer width="default">
+      <h1 className="type-h1 font-display font-semibold mb-6 text-balance">
         Search opportunities
       </h1>
       <SearchSurface initialQuery={typeof q === "string" ? q : undefined} />
-    </div>
+    </PageContainer>
   );
 }

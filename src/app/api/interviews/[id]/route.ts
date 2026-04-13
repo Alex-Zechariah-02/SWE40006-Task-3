@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "../../../../../auth";
-import { prisma } from "@/lib/prisma";
+import { requireUserOrResponse } from "@/lib/api/auth";
+import { jsonError } from "@/lib/api/errors";
+import { readJsonOrResponse } from "@/lib/api/json";
+import { validateOrResponse } from "@/lib/api/validation";
 import { interviewUpdateSchema } from "@/lib/validation/interview";
 import { updateInterview, deleteInterview } from "@/lib/db/interviews";
 
@@ -10,50 +12,23 @@ export const runtime = "nodejs";
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: Request, context: RouteContext) {
-  const session = await auth();
-  const email = session?.user?.email;
-  if (!email) {
-    return NextResponse.json(
-      { error: { message: "You must be signed in." } },
-      { status: 401 }
-    );
-  }
-
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    return NextResponse.json(
-      { error: { message: "Account not found." } },
-      { status: 401 }
-    );
-  }
+  const authed = await requireUserOrResponse();
+  if (!authed.ok) return authed.response;
 
   const { id } = await context.params;
 
-  let json: unknown;
-  try {
-    json = await req.json();
-  } catch {
-    return NextResponse.json(
-      { error: { message: "Invalid request body." } },
-      { status: 400 }
-    );
-  }
+  const body = await readJsonOrResponse(req);
+  if (!body.ok) return body.response;
+  const json = body.json;
 
-  const parsed = interviewUpdateSchema.safeParse(json);
-  if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: {
-          message: "Validation failed.",
-          fields: parsed.error.flatten().fieldErrors,
-        },
-      },
-      { status: 400 }
-    );
-  }
+  const parsed = validateOrResponse(interviewUpdateSchema, json, {
+    message: "Validation failed.",
+    includeFieldErrors: true,
+  });
+  if (!parsed.ok) return parsed.response;
 
   try {
-    const updated = await updateInterview(id, user.id, {
+    const updated = await updateInterview(id, authed.user.id, {
       interviewType: parsed.data.interviewType,
       scheduledAt: parsed.data.scheduledAt,
       locationOrLink: parsed.data.locationOrLink === "" ? null : parsed.data.locationOrLink,
@@ -63,35 +38,21 @@ export async function PATCH(req: Request, context: RouteContext) {
     return NextResponse.json({ interview: updated });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Interview not found or update failed.";
-    return NextResponse.json({ error: { message } }, { status: 404 });
+    return jsonError(message, 404);
   }
 }
 
 export async function DELETE(_req: Request, context: RouteContext) {
-  const session = await auth();
-  const email = session?.user?.email;
-  if (!email) {
-    return NextResponse.json(
-      { error: { message: "You must be signed in." } },
-      { status: 401 }
-    );
-  }
-
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    return NextResponse.json(
-      { error: { message: "Account not found." } },
-      { status: 401 }
-    );
-  }
+  const authed = await requireUserOrResponse();
+  if (!authed.ok) return authed.response;
 
   const { id } = await context.params;
 
   try {
-    await deleteInterview(id, user.id);
+    await deleteInterview(id, authed.user.id);
     return NextResponse.json({ deleted: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Interview not found.";
-    return NextResponse.json({ error: { message } }, { status: 404 });
+    return jsonError(message, 404);
   }
 }

@@ -23,7 +23,7 @@ export function LandingSearch() {
         <div className="flex-1">
           <SearchInput value={query} onChange={setQuery} />
         </div>
-        <Button type="submit" className="h-11 sm:px-5">
+        <Button type="submit" className="h-12 sm:px-4">
           Search
         </Button>
       </div>

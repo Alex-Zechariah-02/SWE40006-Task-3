@@ -21,9 +21,9 @@ export function SectionHeader({
       )}
     >
       <div>
-        <h2 className="type-h2 font-semibold">{title}</h2>
+        <h2 className="type-h2 font-display font-semibold">{title}</h2>
         {subtitle && (
-          <p className="mt-0.5 type-small text-muted-foreground">{subtitle}</p>
+          <p className="mt-1 type-small text-muted-foreground">{subtitle}</p>
         )}
       </div>
       {action && <div className="shrink-0">{action}</div>}

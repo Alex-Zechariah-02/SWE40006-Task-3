@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { getSessionOrRedirect } from "@/lib/auth/session";
+import { getUserIdFromSessionOrNull } from "@/lib/auth/user";
 import { getCompany } from "@/lib/db/companies";
 import { CompanyDetailSurface } from "@/features/companies/CompanyDetailSurface";
-import { prisma } from "@/lib/prisma";
+import { PageContainer } from "@/components/shared/PageContainer";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -11,14 +12,10 @@ type PageProps = {
 export default async function Page({ params }: PageProps) {
   const { id } = await params;
   const session = await getSessionOrRedirect(`/app/companies/${id}`);
-  const user = await prisma.user.findUnique({
-    where: { email: session.user?.email ?? "" },
-    select: { id: true },
-  });
+  const userId = await getUserIdFromSessionOrNull(session);
+  if (!userId) return notFound();
 
-  if (!user) return notFound();
-
-  const company = await getCompany(id, user.id);
+  const company = await getCompany(id, userId);
   if (!company) return notFound();
 
   const serialized = {
@@ -39,6 +36,15 @@ export default async function Page({ params }: PageProps) {
       title: c.title,
       email: c.email,
     })),
+    applications: company.applications.map((application) => ({
+      id: application.id,
+      currentStage: application.currentStage,
+      priority: application.priority,
+      appliedDate: application.appliedDate
+        ? application.appliedDate.toISOString()
+        : null,
+      opportunity: application.opportunity,
+    })),
     opportunities: company.opportunities.map((o) => ({
       id: o.id,
       title: o.title,
@@ -49,8 +55,8 @@ export default async function Page({ params }: PageProps) {
   };
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-6 py-10">
+    <PageContainer width="default">
       <CompanyDetailSurface company={serialized} />
-    </div>
+    </PageContainer>
   );
 }

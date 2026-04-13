@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { auth } from "../../../../../../auth";
-import { prisma } from "@/lib/prisma";
+import { requireUserOrResponse } from "@/lib/api/auth";
+import { jsonError } from "@/lib/api/errors";
+import { readJsonOrResponse } from "@/lib/api/json";
+import { validateOrResponse } from "@/lib/api/validation";
 import { contactLinkSchema } from "@/lib/validation/application";
 import {
   linkContactToApplication,
@@ -13,83 +15,41 @@ export const runtime = "nodejs";
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(req: Request, context: RouteContext) {
-  const session = await auth();
-  const email = session?.user?.email;
-  if (!email) {
-    return NextResponse.json(
-      { error: { message: "You must be signed in." } },
-      { status: 401 }
-    );
-  }
-
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    return NextResponse.json(
-      { error: { message: "Account not found." } },
-      { status: 401 }
-    );
-  }
+  const authed = await requireUserOrResponse();
+  if (!authed.ok) return authed.response;
 
   const { id: applicationId } = await context.params;
 
-  let json: unknown;
-  try {
-    json = await req.json();
-  } catch {
-    return NextResponse.json(
-      { error: { message: "Invalid request body." } },
-      { status: 400 }
-    );
-  }
+  const body = await readJsonOrResponse(req);
+  if (!body.ok) return body.response;
+  const json = body.json;
+  const record = json as Record<string, unknown>;
 
-  const body = json as Record<string, unknown>;
-  const parsed = contactLinkSchema.safeParse({
+  const parsed = validateOrResponse(contactLinkSchema, {
     applicationId,
-    contactId: body.contactId,
+    contactId: record.contactId,
+  }, {
+    message: "Validation failed.",
+    includeFieldErrors: true,
   });
-
-  if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: {
-          message: "Validation failed.",
-          fields: parsed.error.flatten().fieldErrors,
-        },
-      },
-      { status: 400 }
-    );
-  }
+  if (!parsed.ok) return parsed.response;
 
   try {
     await linkContactToApplication(
       parsed.data.applicationId,
       parsed.data.contactId,
-      user.id
+      authed.user.id
     );
     return NextResponse.json({ linked: true }, { status: 200 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to link contact.";
-    return NextResponse.json({ error: { message } }, { status: 500 });
+    return jsonError(message, 500);
   }
 }
 
 export async function DELETE(req: Request, context: RouteContext) {
-  const session = await auth();
-  const email = session?.user?.email;
-  if (!email) {
-    return NextResponse.json(
-      { error: { message: "You must be signed in." } },
-      { status: 401 }
-    );
-  }
-
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) {
-    return NextResponse.json(
-      { error: { message: "Account not found." } },
-      { status: 401 }
-    );
-  }
+  const authed = await requireUserOrResponse();
+  if (!authed.ok) return authed.response;
 
   const { id: applicationId } = await context.params;
   const { searchParams } = new URL(req.url);
@@ -103,10 +63,10 @@ export async function DELETE(req: Request, context: RouteContext) {
   }
 
   try {
-    await unlinkContactFromApplication(applicationId, contactId, user.id);
+    await unlinkContactFromApplication(applicationId, contactId, authed.user.id);
     return NextResponse.json({ linked: false });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to unlink contact.";
-    return NextResponse.json({ error: { message } }, { status: 500 });
+    return jsonError(message, 500);
   }
 }

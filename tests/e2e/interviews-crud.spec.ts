@@ -31,7 +31,9 @@ test("interviews: create, edit, delete", async ({ page }) => {
   const applicationId = converted.applicationId;
 
   await page.goto(`/app/applications/${encodeURIComponent(applicationId)}`);
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: `E2E Interview Opp ${stamp}` })
+  ).toBeVisible();
 
   // Create interview (UI)
   await page.getByRole("button", { name: "Add Interview" }).click();
@@ -61,6 +63,9 @@ test("interviews: create, edit, delete", async ({ page }) => {
   expect(createRes.status()).toBe(201);
 
   await expect(createDialog).toBeHidden();
+
+  await page.reload();
+  await expect(page.getByText(/INTERVIEWS\s*\(1\)/)).toBeVisible();
   await expect(
     page.getByRole("main").getByText("Technical Interview", { exact: true })
   ).toBeVisible();
@@ -89,6 +94,9 @@ test("interviews: create, edit, delete", async ({ page }) => {
   expect(patchRes.ok()).toBeTruthy();
 
   await expect(editDialog).toBeHidden();
+
+  await page.reload();
+  await expect(page.getByText(/INTERVIEWS\s*\(1\)/)).toBeVisible();
   await expect(
     page.getByRole("main").getByText("Completed", { exact: true })
   ).toBeVisible();
@@ -107,6 +115,8 @@ test("interviews: create, edit, delete", async ({ page }) => {
   const deleteRes = await deleteResPromise;
   expect(deleteRes.ok()).toBeTruthy();
 
+  await page.reload();
+  await expect(page.getByText(/INTERVIEWS\s*\(0\)/)).toBeVisible();
   await expect(page.getByText("No interviews yet")).toBeVisible();
 
   // Best-effort cleanup: archive records so repeated runs do not pollute default lists.

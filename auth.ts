@@ -6,8 +6,12 @@ import { compare } from "bcryptjs";
 import { prisma } from "./src/lib/prisma";
 
 const credentialsSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
+  email: z
+    .string()
+    .trim()
+    .email()
+    .transform((v) => v.toLowerCase()),
+  password: z.string().min(1).max(72),
 });
 
 const trustHost =

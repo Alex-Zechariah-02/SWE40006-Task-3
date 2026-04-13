@@ -63,13 +63,11 @@ export function RejectionDetailModal({
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        toast.error(data.error?.message || "Failed to save rejection detail.");
+        toast.error(data.error?.message || "Failed to save.");
         return;
       }
 
-      toast.success(
-        isEditing ? "Rejection detail updated." : "Rejection detail saved."
-      );
+      toast.success(isEditing ? "Updated." : "Saved.");
       onOpenChange(false);
       router.refresh();
     } finally {
@@ -90,8 +88,8 @@ export function RejectionDetailModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="grid gap-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid gap-2">
               <Label htmlFor="rejection-date">Rejection date</Label>
               <Input
                 id="rejection-date"
@@ -100,7 +98,7 @@ export function RejectionDetailModal({
                 defaultValue={rejectionDateStr}
               />
             </div>
-            <div className="grid gap-1.5">
+            <div className="grid gap-2">
               <Label htmlFor="rejection-stage">Rejected at stage</Label>
               <Input
                 id="rejection-stage"
@@ -113,7 +111,7 @@ export function RejectionDetailModal({
             </div>
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="rejection-notes">Notes</Label>
             <Textarea
               id="rejection-notes"
@@ -138,4 +136,3 @@ export function RejectionDetailModal({
     </Dialog>
   );
 }
-

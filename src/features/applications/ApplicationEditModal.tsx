@@ -95,7 +95,7 @@ export function ApplicationEditModal({
         return;
       }
 
-      toast.success("Application updated.");
+      toast.success("Updated.");
       onOpenChange(false);
       router.refresh();
     } finally {
@@ -117,11 +117,15 @@ export function ApplicationEditModal({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="grid gap-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
-              <Label>Stage</Label>
-              <Select name="currentStage" defaultValue={application.currentStage}>
-                <SelectTrigger className="w-full">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-currentStage">Stage</Label>
+              <Select
+                name="currentStage"
+                defaultValue={application.currentStage}
+                items={STAGES}
+              >
+                <SelectTrigger id="edit-currentStage" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -133,10 +137,14 @@ export function ApplicationEditModal({
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-1.5">
-              <Label>Priority</Label>
-              <Select name="priority" defaultValue={application.priority}>
-                <SelectTrigger className="w-full">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-priority">Priority</Label>
+              <Select
+                name="priority"
+                defaultValue={application.priority}
+                items={PRIORITIES}
+              >
+                <SelectTrigger id="edit-priority" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -150,7 +158,7 @@ export function ApplicationEditModal({
             </div>
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="edit-appliedDate">Date Applied</Label>
             <Input
               id="edit-appliedDate"
@@ -160,7 +168,7 @@ export function ApplicationEditModal({
             />
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label htmlFor="edit-statusNotes">Status Notes</Label>
             <Textarea
               id="edit-statusNotes"
@@ -172,7 +180,7 @@ export function ApplicationEditModal({
             />
           </div>
 
-          <div className="grid gap-1.5">
+          <div className="grid gap-2">
             <Label>Tags</Label>
             <TagInput value={tags} onChange={setTags} />
           </div>

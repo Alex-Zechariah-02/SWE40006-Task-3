@@ -1,10 +1,16 @@
 "use client";
 
+import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
-import { AlertCircle } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { EmptyState } from "@/components/shared/EmptyState";
 import { buttonVariants } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardAction, CardContent } from "@/components/ui/card";
+import {
+  reducedMotionTransition,
+  staggerContainer,
+  staggerItem,
+  staggerItemTransition,
+} from "@/lib/ui/animations";
+import { formatShortDate } from "@/lib/ui/formatRelativeTime";
 
 interface UrgentActionsSectionProps {
   items: Array<{
@@ -17,26 +23,6 @@ interface UrgentActionsSectionProps {
   }>;
 }
 
-function formatDate(isoString: string): string {
-  if (!isoString) return "No deadline";
-  return new Date(isoString).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-  });
-}
-
-function priorityLabel(priority: string): string {
-  switch (priority) {
-    case "High":
-      return "High";
-    case "Medium":
-      return "Med";
-    case "Low":
-      return "Low";
-    default:
-      return priority;
-  }
-}
 
 function priorityColor(priority: string): string {
   switch (priority) {
@@ -52,58 +38,75 @@ function priorityColor(priority: string): string {
 }
 
 export function UrgentActionsSection({ items }: UrgentActionsSectionProps) {
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        icon={AlertCircle}
-        title="No urgent actions."
-        description="Stay on top of your pipeline tasks."
-        action={
-          <Link
-            href="/app/actions?status=openWork&dueWindow=dueSoon&sort=dueDate"
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-          >
-            View actions
-          </Link>
-        }
-      />
-    );
-  }
+  const shouldReduceMotion = useReducedMotion();
 
   return (
-    <Card>
-      <CardContent className="pt-4">
-        <p className="type-mono-label text-muted-foreground">Urgent Actions</p>
-        <ul className="mt-3 space-y-3">
-          {items.map((item) => (
-            <li
-              key={item.id}
-              className="flex items-start justify-between gap-3"
+    <Card size="sm">
+      <CardHeader>
+        <CardTitle className="type-section-label text-muted-foreground">
+          Follow-ups Due
+        </CardTitle>
+        {items.length > 0 && (
+          <CardAction>
+            <span className="type-section-label text-muted-foreground">
+              {items.length}
+            </span>
+          </CardAction>
+        )}
+      </CardHeader>
+      <CardContent>
+        {items.length === 0 ? (
+          <p className="type-small text-muted-foreground py-2">
+            All caught up — no follow-ups due.
+          </p>
+        ) : (
+          <>
+            <motion.ul
+              className="grid gap-2"
+              variants={staggerContainer}
+              initial="initial"
+              animate="animate"
             >
-              <Link
-                href="/app/actions"
-                className="type-body font-medium text-foreground transition-colors hover:text-primary"
-              >
-                {item.title}
-              </Link>
-              <div className="flex shrink-0 items-center gap-2">
-                <span
-                  className={`type-mono-label ${priorityColor(item.priority)}`}
+              {items.slice(0, 5).map((item) => (
+                <motion.li
+                  key={item.id}
+                  className="flex items-start justify-between gap-2"
+                  variants={staggerItem}
+                  transition={
+                    shouldReduceMotion
+                      ? reducedMotionTransition
+                      : staggerItemTransition
+                  }
                 >
-                  {priorityLabel(item.priority)}
-                </span>
-                {item.isOverdue && (
-                  <span className="type-mono-label rounded bg-status-danger/10 px-1.5 py-0.5 text-status-danger">
-                    Overdue
+                  <div className="min-w-0 flex-1">
+                    <p className="type-small font-medium leading-tight truncate">
+                      {item.title}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {item.isOverdue && (
+                        <span className="type-mono-label text-[0.65rem] rounded bg-status-danger/10 px-1 py-px text-status-danger">
+                          Overdue
+                        </span>
+                      )}
+                      <span className={`type-mono-label text-[0.65rem] ${priorityColor(item.priority)}`}>
+                        {item.priority}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="type-mono-label shrink-0 text-muted-foreground">
+                    {formatShortDate(item.dueAt)}
                   </span>
-                )}
-                <span className="type-mono-label text-muted-foreground">
-                  {formatDate(item.dueAt)}
-                </span>
-              </div>
-            </li>
-          ))}
-        </ul>
+                </motion.li>
+              ))}
+            </motion.ul>
+            <Link
+              href="/app/actions?status=openWork&dueWindow=overdue&sort=dueDate"
+              className={buttonVariants({ variant: "link", size: "sm" }) + " mt-2 px-0"}
+            >
+              View all →
+            </Link>
+          </>
+        )}
       </CardContent>
     </Card>
   );

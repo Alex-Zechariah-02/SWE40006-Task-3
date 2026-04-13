@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { jsonError } from "@/lib/api/errors";
+import { readJsonOrResponse } from "@/lib/api/json";
+import { validateOrResponse } from "@/lib/api/validation";
 import { LinkupError, linkupStructuredSearch } from "@/lib/search/linkup";
 import { canonicalizeUrl } from "@/lib/search/dedupe";
 import { normalizeResults } from "@/lib/search/normalize";
@@ -156,23 +159,14 @@ function enrichQuery(query: string): string {
 export async function POST(req: Request) {
   const ip = clientIp(req);
 
-  let json: unknown;
-  try {
-    json = await req.json();
-  } catch {
-    return NextResponse.json(
-      { error: { message: "Invalid request body." } },
-      { status: 400 }
-    );
-  }
+  const body = await readJsonOrResponse(req);
+  if (!body.ok) return body.response;
 
-  const parsed = requestSchema.safeParse(json);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: { message: "Search queries must be 3 to 120 characters." } },
-      { status: 400 }
-    );
-  }
+  const parsed = validateOrResponse(requestSchema, body.json, {
+    message: "Search queries must be 3 to 120 characters.",
+    includeFieldErrors: false,
+  });
+  if (!parsed.ok) return parsed.response;
 
   const enriched = enrichQuery(parsed.data.query);
 
@@ -183,9 +177,9 @@ export async function POST(req: Request) {
     }
 
     if (!allowRequest(ip)) {
-      return NextResponse.json(
-        { error: { message: "Too many searches. Please wait a moment and try again." } },
-        { status: 429 }
+      return jsonError(
+        "Too many searches. Please wait a moment and try again.",
+        429
       );
     }
   }
@@ -269,6 +263,6 @@ export async function POST(req: Request) {
           : "Search failed. Please try again.";
 
     const httpStatus = status === 429 ? 429 : 502;
-    return NextResponse.json({ error: { message } }, { status: httpStatus });
+    return jsonError(message, httpStatus);
   }
 }

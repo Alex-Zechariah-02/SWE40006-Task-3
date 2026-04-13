@@ -9,6 +9,7 @@ import { LabelValue } from "@/components/shared/LabelValue";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { InterviewModal } from "./InterviewModal";
 import { Plus, Pencil, Trash2, Calendar, MapPin, Link as LinkIcon } from "lucide-react";
+import { getInterviewStatusLabel, getInterviewTypeLabel } from "./interviewLabels";
 
 interface InterviewRow {
   id: string;
@@ -23,15 +24,6 @@ interface InterviewListProps {
   interviews: InterviewRow[];
   applicationId: string;
 }
-
-const INTERVIEW_TYPE_LABELS: Record<string, string> = {
-  RecruiterScreen: "Recruiter Screen",
-  HRScreen: "HR Screen",
-  AssessmentReview: "Assessment Review",
-  TechnicalInterview: "Technical Interview",
-  FinalInterview: "Final Interview",
-  OfferDiscussion: "Offer Discussion",
-};
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   Scheduled: "default",
@@ -70,10 +62,10 @@ export function InterviewList({
       method: "DELETE",
     });
     if (!res.ok) {
-      toast.error("Failed to delete interview.");
+      toast.error("Failed to delete.");
       return;
     }
-    toast.success("Interview deleted.");
+    toast.success("Deleted.");
     router.refresh();
   }
 
@@ -116,21 +108,20 @@ export function InterviewList({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="type-body font-medium">
-                      {INTERVIEW_TYPE_LABELS[interview.interviewType] ||
-                        interview.interviewType}
+                      {getInterviewTypeLabel(interview.interviewType)}
                     </span>
                     <Badge
                       variant={
                         STATUS_VARIANT[interview.status] ?? "outline"
                       }
                     >
-                      {interview.status}
+                      {getInterviewStatusLabel(interview.status)}
                     </Badge>
                   </div>
 
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                     <LabelValue
-                      label="WHEN"
+                      label="When"
                       value={new Date(interview.scheduledAt).toLocaleDateString(
                         "en-GB",
                         {
@@ -158,7 +149,7 @@ export function InterviewList({
                   </div>
 
                   {interview.notes && (
-                    <p className="mt-1.5 type-small text-muted-foreground whitespace-pre-wrap">
+                    <p className="mt-2 type-small text-muted-foreground whitespace-pre-wrap">
                       {interview.notes}
                     </p>
                   )}
